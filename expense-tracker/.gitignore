@@ -3,7 +3,12 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 /package-lock.json
 /yarn.lock
 /pnpm-lock.yaml
@@ -29,11 +34,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local env files (keep example files in repo; ignore local secrets)
+# env files (keep example files, ignore local secrets)
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.example
 
 # vercel
 .vercel
@@ -44,3 +50,4 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+next-env.d.ts
