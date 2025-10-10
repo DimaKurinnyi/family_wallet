@@ -1,20 +1,18 @@
-import { About, Components, HomeTitle } from '@/components/shared';
+import { About, Components, Footer, HomeTitle } from '@/components/shared';
 
 export default function Home() {
   return (
     <div
-        className="min-h-screen w-full"
-        style={{
-          minHeight: '100vh',
-          background: "linear-gradient(135deg, #4FACFE 0%, #A770EF 40%, #FF7EB6 65%, #FFB86B 100%)",
-        
-        }}
-      >
-    <Components >
-      <HomeTitle/>
-     
-    </Components>
-
+      className="min-h-screen w-full"
+      style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #2E6FB1 0%, #6A40B8 40%, #D64A87 65%, #C77A3E 100%)',
+      }}>
+      <Components>
+        <HomeTitle />
+        <About />
+        <Footer/>
+      </Components>
     </div>
   );
 }
