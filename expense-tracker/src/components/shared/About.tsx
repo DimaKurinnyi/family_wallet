@@ -10,7 +10,7 @@ interface Props {
 export const About: React.FC<Props> = ({ className }) => {
   return (
     <div id="about" className={cn('pb-15', className)}>
-      <Title text="About Expense Tracker" size="lg" className="text-white font-bold text-center mb-15" />
+      <Title text="About Expense Tracker" size="lg" className="text-white font-bold text-center mb-15 s" />
 
       <div className="flex justify-around ">
         <Image src="/assets/About.webp" alt="about" width={500} height={500} className="border rounded-2xl" />
