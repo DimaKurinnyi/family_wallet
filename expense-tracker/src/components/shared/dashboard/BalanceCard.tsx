@@ -1,6 +1,9 @@
+'use client';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from 'lucide-react';
 
 export const BalanceCard = () => {
+  const { symbol } = useCurrencyStore();
   return (
     <div className="flex flex-col w-[400px]  p-8 rounded-4xl balance-card text-white overflow-hidden min-h-[220px]">
       {/*top  */}
@@ -13,7 +16,7 @@ export const BalanceCard = () => {
             </div>
             <div className="flex items-center gap-1 mb-2  bg-white/5 dark:bg-white/5 backdrop-blur-md border border-white/20 shadow-sm rounded-full px-2 py-1 hover:bg-white/10 hover:scale-105 transition-all cursor-pointer"><h2 className="text-sm ">Cost overview</h2> <ChevronRight className='w-4 h-4'/> </div>
           </div>
-          <h2 className="text-4xl font-extrabold tracking-tight">$12,345.67</h2>
+          <h2 className="text-4xl font-extrabold tracking-tight">{symbol}12,345.67</h2>
         </div>
       </div>
       {/* bottom */}
@@ -25,7 +28,7 @@ export const BalanceCard = () => {
             </span>
             <p className="opacity-90">Income</p>
           </div>
-          <h2 className="mt-2 font-semibold">$12,345.67</h2>
+          <h2 className="mt-2 font-semibold">{symbol}12,345.67</h2>
         </div>
         <div className="flex flex-col items-end">
           <div className="flex items-center gap-3">
@@ -34,7 +37,7 @@ export const BalanceCard = () => {
             </span>
             <p className="opacity-90">Expenses</p>
           </div>
-          <h2 className="mt-2 font-semibold">$12,345.67</h2>
+          <h2 className="mt-2 font-semibold">{symbol}12,345.67</h2>
         </div>
       </div>
     </div>

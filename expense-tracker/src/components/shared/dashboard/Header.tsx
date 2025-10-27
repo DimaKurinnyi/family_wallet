@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import React from 'react'
 import {LogOutButton} from './LogUotButton';
+import CurrencySwitcher from './CurrencySwitcher';
 
 interface Props{
     className?: string;
@@ -23,6 +24,7 @@ export const Header: React.FC<Props> = ( className) => {
         </Link>
         {/* right side */}
         <div className="flex items-center gap-4">
+          <CurrencySwitcher/>
             <p>Welcome back,User</p>
             <LogOutButton/>
         </div>
