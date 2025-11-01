@@ -1,5 +1,14 @@
+'use client';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { BadgeEuro, BanknoteArrowUp, Bus, Clapperboard, Utensils } from 'lucide-react';
+
+interface Props{
+  className?:string
+  title?:string
+}
 
 const transactions = [
   { id: 1, icon: <Bus />, amount: 20, date: '12:25 PM', status: 'expenses', category: 'transport' },
@@ -9,11 +18,12 @@ const transactions = [
   { id: 5, icon: <Clapperboard />, amount: 15, date: '4:00 PM', status: 'expenses', category: 'entertainment' },
   { id: 6, icon: <BanknoteArrowUp />, amount: 30, date: '5:15 PM', status: 'expenses', category: 'bills' },
 ];
-export const Transactions = () => {
+export const Transactions: React.FC<Props> = ({className,title}) => {
+  const { symbol } = useCurrencyStore();
   return (
-    <div className=" mt-20 w-[600px] ">
+    <div className={cn(" mt-20   ", className)}>
       <div className=" flex justify-between items-center mx-8">
-        <h2 className="font-semibold text-2xl">Transactions</h2>
+        <h2 className="font-semibold text-2xl">{title}</h2>
 
         <Button variant="link" className="text-gray-400 text-md font-extralight">
           See All
@@ -31,7 +41,7 @@ export const Transactions = () => {
             </div>
             <div>
               <p className={` font-semibold text-md ${transaction.status === 'income' ? 'text-green-500' : 'text-red-500'}`}>
-                {transaction.status === 'income' ? `+€${transaction.amount}` : `-€${transaction.amount}`}
+                {transaction.status === 'income' ? `+${symbol}${transaction.amount}` : `-${symbol}${transaction.amount}`}
               </p>
             </div>
           </div>

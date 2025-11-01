@@ -17,7 +17,7 @@ export const DashboardContainer: React.FC<{ children?: React.ReactNode }> = ({ c
         </div>
 
         {/* SideBar — прижат к внутренней правой части белого блока и центрирован по вертикали */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2">
+        <div className="absolute -right-27 top-1/2 -translate-y-1/2 hover:right-0 transition-all duration-300">
           <SideBar />
         </div>
       </div>

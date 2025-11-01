@@ -8,7 +8,7 @@ export default function Dashboard() {
         <DashboardContent />
         <div className="">Schedule</div>
       </div>
-      <Transactions />
+      <Transactions className="w-[600px]" title="Transactions" />
     </DashboardContainer>
   );
 }

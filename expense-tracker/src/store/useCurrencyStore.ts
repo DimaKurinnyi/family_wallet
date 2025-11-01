@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type CurrencyKey = "USD" | "EUR" | "UAH" | "PLN";
-
+export type Currency = "USD" | "EUR" | "UAH" | "PLN";
+ 
 interface CurrencyState {
-  currency: CurrencyKey;
+  currency: Currency;
   symbol: string;
   icon: string;
-  setCurrency: (currency: CurrencyKey) => void;
+  setCurrency: (currency: Currency) => void;
 }
 
 export const useCurrencyStore = create<CurrencyState>()(
@@ -16,8 +16,8 @@ export const useCurrencyStore = create<CurrencyState>()(
       currency: "USD",
       symbol: "$",
       icon: "💵",
-      setCurrency: (currency: CurrencyKey) => {
-        const map: Record<CurrencyKey, { symbol: string; icon: string }> = {
+      setCurrency: (currency: Currency) => {
+        const map: Record<Currency, { symbol: string; icon: string }> = {
           USD: { symbol: "$", icon: "💵" },
           EUR: { symbol: "€", icon: "💶" },
           UAH: { symbol: "₴", icon: "🇺🇦" },
