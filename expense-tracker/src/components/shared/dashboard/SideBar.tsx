@@ -1,6 +1,6 @@
 import { Home, LayoutDashboard, User, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import { AddTransaction } from './addTransaction/AddTransaction';
+import { AddWindow } from './addTransaction/AddWindow';
 
 export const SideBar = () => {
   return (
@@ -17,7 +17,7 @@ export const SideBar = () => {
         </Link>
       </div>
 
-      <AddTransaction />
+      <AddWindow />
       <div className="flex flex-col gap-4 p-3 items-start *:w-full *:flex *:gap-2 *:align-baseline *:font-semibold *:text-lg pt-1">
         <Link href="/wallets" className="p-2  rounded-md hover:bg-[#e094c8]">
           <Wallet />
