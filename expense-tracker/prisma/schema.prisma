@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+ 
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  currency      String         @default("USD")
+  wallets       Wallet[]       @relation("UserWallets")
+  createdAt     DateTime       @default(now())
+  walletMembers WalletMember[]
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+}
+
+model Wallet {
+  id           String         @id @default(cuid())
+  name         String
+  type         WalletType // "personal" or "shared"
+  ownerId      String?
+  owner        User?          @relation("UserWallets", fields: [ownerId], references: [id])
+  members      WalletMember[]
+  transactions Transaction[]
+  createdAt    DateTime       @default(now())
+}
+
+model WalletMember {
+  id       String @id @default(cuid())
+  userId   String
+  walletId String
+  user     User   @relation(fields: [userId], references: [id])
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  icon         String
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id         String          @id @default(cuid())
+  type       TransactionType
+  amount     Float
+  comment    String?
+  categoryId String?
+  category   Category?       @relation(fields: [categoryId], references: [id])
+  walletId   String
+  wallet     Wallet          @relation(fields: [walletId], references: [id])
+  userId     String // кто совершил транзакцию
+  user       User            @relation(fields: [userId], references: [id])
+  createdAt  DateTime        @default(now())
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+
+  // Important for credentials login (email+password)
+  hashedPassword String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+enum WalletType {
+  personal
+  shared
+}
+
+enum TransactionType {
+  income
+  expense
+}
