@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { LoginInput, loginSchema } from './auth.schema';
+import { LoginInput, loginSchema } from './validation/auth.schema';
 
 export async function loginUser(data: LoginInput) {
   const parsed = loginSchema.safeParse(data);

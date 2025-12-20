@@ -1,59 +1,63 @@
-import jwt from 'jsonwebtoken';
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 
-// Маршруты, которые не требуют авторизации
-const publicRoutes = ['/api/auth/login', '/api/auth/register'];
+const PUBLIC_ROUTES = [
+  '/api/auth/login',
+  '/api/auth/register',
+];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Если маршрут публичный → пропускаем
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // Проверяем токен
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const authHeader = req.headers.get('authorization');
 
-  if (!token) {
-    return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json(
+      { error: 'Unauthorized: missing token' },
+      { status: 401 }
+    );
   }
 
+  const token = authHeader.split(' ')[1];
+
   try {
-    if (!process.env.JWT_SECRET) {
-      return NextResponse.json({ error: 'Server misconfiguration: missing JWT_SECRET' }, { status: 500 });
-    }
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
-    const decoded = jwt.verify<Record<string, unknown>>(token, process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
 
-    // Добавляем userId в заголовки запроса → будет доступно в API
-    const requestHeaders = new Headers(req.headers);
-
-    let userId: string | undefined;
-    if (decoded && typeof decoded === 'object' && 'userId' in decoded) {
-      const raw = (decoded as Record<string, unknown>)['userId'];
-      if (typeof raw === 'string' || typeof raw === 'number') {
-        userId = String(raw);
-      }
-    }
+    const userId = payload.userId as string | undefined;
 
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized: Token payload missing userId' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized: invalid token payload' },
+        { status: 401 }
+      );
     }
 
-    requestHeaders.set('x-user-id', userId);
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
+    const response = NextResponse.next();
+    response.cookies.set('userId', userId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
     });
-  } catch (e) {
-    return NextResponse.json({ error: 'Unauthorized: Invalid or expired token' }, { status: 401 });
+
+    return response;
+  } catch (error) {
+    console.error('JWT VERIFY ERROR (EDGE):', error);
+
+    return NextResponse.json(
+      { error: 'Unauthorized: invalid or expired token' },
+      { status: 401 }
+    );
   }
 }
 
 export const config = {
-  matcher: ['/api/:path*'], // middleware работает только на /api
+  matcher: ['/api/:path*'],
 };
+

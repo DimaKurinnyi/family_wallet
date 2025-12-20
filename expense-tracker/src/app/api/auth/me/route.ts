@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/server/getCurrentUser";
+import { getCurrentUser } from '@/server/getCurrentUser';
+import { NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const user = await getCurrentUser(req);
+    const user = await getCurrentUser();
     return NextResponse.json({ user });
   } catch (error) {
     console.error('Error in GET route:', error);

@@ -1,45 +1,41 @@
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import { RegisterInput } from './validation/auth.schema';
 
-import prisma from "@/lib/prisma";
-import { RegisterInput } from "./auth.schema";
-import bcrypt from "bcryptjs";
+export async function registerUser(data: RegisterInput) {
+  const existingUser = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
 
+  if (existingUser) {
+    throw new Error('User with this email already exists');
+  }
 
-export async function registerUser(data:RegisterInput){
-    const existingUser = await prisma.user.findUnique({
-        where: { email: data.email },
-    
-    })
+  const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    if(existingUser){
-        throw new Error('User with this email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(data.password,10)
-
-    const user = await prisma.user.create({
-        data:{
-            email: data.email,
-            name: data.name,
-            accounts:{
-                create:{
-                    provider: 'credentials',
-                    providerAccountId:data.email,
-                    hashedPassword,
-                    type:'password',
-                },
-
-            },
-            wallets:{
-                create:{
-                    name:'Default Wallet',
-                    type:'personal',
-                }
-            }
+  const user = await prisma.user.create({
+    data: {
+      email: data.email,
+      name: data.name,
+      accounts: {
+        create: {
+          provider: 'credentials',
+          providerAccountId: data.email,
+          hashedPassword,
+          type: 'password',
         },
-        include: {
-            accounts: true,
-            wallets: true,
+      },
+      wallets: {
+        create: {
+          name: 'Default Wallet',
+          type: 'personal',
         },
-    })
-    return user;
+      },
+    },
+    include: {
+      accounts: true,
+      wallets: true,
+    },
+  });
+  return user;
 }

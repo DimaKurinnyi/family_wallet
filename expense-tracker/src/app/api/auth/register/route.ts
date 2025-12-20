@@ -1,5 +1,5 @@
-import { registerSchema } from '@/server/auth.schema';
 import { registerUser } from '@/server/user.service';
+import { registerSchema } from '@/server/validation/auth.schema';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
