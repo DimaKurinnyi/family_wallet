@@ -7,7 +7,6 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
- 
 }
 
 datasource db {
@@ -46,13 +45,28 @@ model WalletMember {
   wallet   Wallet @relation(fields: [walletId], references: [id])
 }
 
+model Icon {
+  id         String     @id @default(cuid())
+  name       String
+  type       IconType
+  categories Category[]
+
+  @@unique([name, type])
+}
+
 model Category {
   id           String        @id @default(cuid())
   name         String
-  icon         String
+  iconId       String
+  type         CategoryType
+  icon         Icon          @relation(fields: [iconId], references: [id])
   userId       String?
   user         User?         @relation(fields: [userId], references: [id])
   transactions Transaction[]
+  createdAt    DateTime      @default(now())
+
+  @@unique([name, userId])
+  @@unique([name, type])
 }
 
 model Transaction {
@@ -100,4 +114,14 @@ enum WalletType {
 enum TransactionType {
   income
   expense
+}
+
+enum CategoryType {
+  system
+  custom
+}
+
+enum IconType {
+  system
+  custom
 }
