@@ -1,15 +1,12 @@
 import prisma from '@/lib/prisma';
+import { getUserId } from '@/server/getUserId';
 import { createCategorySchema } from '@/server/validation/createCategory.schema';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const userId = (await cookies()).get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorize' }, { status: 401 });
-    }
+    const userId = await getUserId();
 
     const categories = await prisma.category.findMany({
       where: {

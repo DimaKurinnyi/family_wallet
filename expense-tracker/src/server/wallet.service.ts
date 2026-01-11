@@ -10,6 +10,7 @@ export async function getUserWallets(userId: string) {
     },
   });
 }
+
 export async function createWallet(userId: string, name: string, type: 'personal' | 'shared') {
   const wallet = await prisma.wallet.create({
     data: {

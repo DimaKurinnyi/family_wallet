@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
   try {
-    const user = await getCurrentUser(req);
+    const user = await getCurrentUser();
     const wallets = await getUserWallets(user.id);
     return NextResponse.json(wallets);
   } catch (error) {
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser(req);
+    const user = await getCurrentUser();
     const body = await req.json();
     const parsed = createWalletSchema.safeParse(body);
     if (!parsed.success) {
