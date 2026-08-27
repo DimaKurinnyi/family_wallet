@@ -49,6 +49,7 @@ export default async function Dashboard() {
     id: category.id,
     name: category.name,
     iconName: category.icon?.name ?? null,
+    flow: category.flow,
   }));
 
   return (

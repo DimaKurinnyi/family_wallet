@@ -59,6 +59,9 @@ model Category {
   name         String
   iconId       String
   type         CategoryType
+  // Для какой стороны операции годится категория. both — и туда и туда:
+  // «Подарки» можно и получить, и подарить.
+  flow         CategoryFlow  @default(expense)
   icon         Icon          @relation(fields: [iconId], references: [id])
   userId       String?
   user         User?         @relation(fields: [userId], references: [id])
@@ -118,6 +121,12 @@ enum TransactionType {
 enum CategoryType {
   system
   custom
+}
+
+enum CategoryFlow {
+  income
+  expense
+  both
 }
 
 enum IconType {

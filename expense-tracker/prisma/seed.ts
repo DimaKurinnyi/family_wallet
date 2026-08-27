@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { CategoryType, IconType, PrismaClient } from '../src/generated/prisma/client';
+import { CategoryFlow, CategoryType, IconType, PrismaClient } from '../src/generated/prisma/client';
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
@@ -53,27 +53,31 @@ async function seedCategories() {
     return icon;
   };
 
+  const E = CategoryFlow.expense;
+  const I = CategoryFlow.income;
+  const B = CategoryFlow.both;
+
   const categories = [
-    { name: 'Продукты', icon: 'ShoppingCart' },
-    { name: 'Кафе', icon: 'Utensils' },
-    { name: 'Транспорт', icon: 'Car' },
-    { name: 'Такси', icon: 'Car' },
-    { name: 'Аренда', icon: 'Home' },
-    { name: 'Коммуналка', icon: 'Home' },
-    { name: 'Здоровье', icon: 'HeartPulse' },
-    { name: 'Аптека', icon: 'HeartPulse' },
-    { name: 'Развлечения', icon: 'Gamepad2' },
-    { name: 'Подписки', icon: 'Gamepad2' },
-    { name: 'Зарплата', icon: 'Wallet' },
-    { name: 'Бонус', icon: 'Wallet' },
-    { name: 'Подарки', icon: 'ShoppingCart' },
-    { name: 'Дом', icon: 'Home' },
-    { name: 'Путешествия', icon: 'Car' },
-    { name: 'Образование', icon: 'GraduationCap' },
-    { name: 'Музыка', icon: 'Gamepad2' },
-    { name: 'Одежда', icon: 'ShoppingCart' },
-    { name: 'Личное', icon: 'Home' },
-    { name: 'Другое', icon: 'Home' },
+    { name: 'Продукты', icon: 'ShoppingCart', flow: E },
+    { name: 'Кафе', icon: 'Utensils', flow: E },
+    { name: 'Транспорт', icon: 'Car', flow: E },
+    { name: 'Такси', icon: 'Car', flow: E },
+    { name: 'Аренда', icon: 'Home', flow: E },
+    { name: 'Коммуналка', icon: 'Home', flow: E },
+    { name: 'Здоровье', icon: 'HeartPulse', flow: E },
+    { name: 'Аптека', icon: 'HeartPulse', flow: E },
+    { name: 'Развлечения', icon: 'Gamepad2', flow: E },
+    { name: 'Подписки', icon: 'Gamepad2', flow: E },
+    { name: 'Зарплата', icon: 'Wallet', flow: I },
+    { name: 'Бонус', icon: 'Wallet', flow: I },
+    { name: 'Подарки', icon: 'ShoppingCart', flow: B },
+    { name: 'Дом', icon: 'Home', flow: E },
+    { name: 'Путешествия', icon: 'Car', flow: E },
+    { name: 'Образование', icon: 'GraduationCap', flow: E },
+    { name: 'Музыка', icon: 'Gamepad2', flow: E },
+    { name: 'Одежда', icon: 'ShoppingCart', flow: E },
+    { name: 'Личное', icon: 'Home', flow: E },
+    { name: 'Другое', icon: 'Home', flow: B },
   ];
 
   for (const category of categories) {
@@ -85,12 +89,19 @@ async function seedCategories() {
       },
     });
 
-    if (!existing) {
+    if (existing) {
+      // Повторный прогон чинит расхождения в иконке и стороне операции.
+      await prisma.category.update({
+        where: { id: existing.id },
+        data: { iconId: getIcon(category.icon).id, flow: category.flow },
+      });
+    } else {
       await prisma.category.create({
         data: {
           name: category.name,
           type: CategoryType.system,
           iconId: getIcon(category.icon).id,
+          flow: category.flow,
           userId: null,
         },
       });

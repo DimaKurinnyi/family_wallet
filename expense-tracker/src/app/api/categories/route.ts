@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json(parsed.error, { status: 400 });
     }
 
-    const { name, iconId } = parsed.data;
+    const { name, iconId, flow } = parsed.data;
 
     const icon = await prisma.icon.findUnique({ where: { id: iconId } });
     if (!icon || icon.type !== 'custom') {
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
         name,
         userId,
         iconId,
+        flow,
         type: 'custom',
       },
       include: { icon: true },

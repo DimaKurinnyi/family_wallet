@@ -3,28 +3,40 @@
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
 import { cn } from '@/lib/utils';
 
-export type CategoryOption = { id: string; name: string; iconName: string | null };
+export type CategoryFlow = 'income' | 'expense' | 'both';
+
+export type CategoryOption = {
+  id: string;
+  name: string;
+  iconName: string | null;
+  flow: CategoryFlow;
+};
 
 interface Props {
   categories: CategoryOption[];
-  transactionType: 'income' | 'expense';
+  transactionType: 'income' | 'expense' | '';
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
 
-export const TransactionAdder: React.FC<Props> = ({
-  categories,
-  transactionType,
-  selectedId,
-  onSelect,
-}) => {
-  const isIncome = transactionType === 'income';
+// Категории со стороной both попадают в обе панели: «Подарки» можно и
+// получить, и подарить.
+const forFlow = (categories: CategoryOption[], side: 'income' | 'expense') =>
+  categories.filter((category) => category.flow === side || category.flow === 'both');
+
+interface PanelProps {
+  categories: CategoryOption[];
+  side: 'income' | 'expense';
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}
+
+const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect }) => {
+  const isIncome = side === 'income';
 
   return (
-    <div className="mt-6">
-      <h2>Выберите категорию:</h2>
-
-      <div className="m-3 grid grid-cols-3 gap-3 max-h-[280px] overflow-y-auto">
+    <div className="w-1/2 flex-none">
+      <div className="grid grid-cols-3 gap-3">
         {categories.map((category) => (
           <button
             key={category.id}
@@ -45,6 +57,40 @@ export const TransactionAdder: React.FC<Props> = ({
             <p className="text-sm text-center">{category.name}</p>
           </button>
         ))}
+      </div>
+    </div>
+  );
+};
+
+export const TransactionAdder: React.FC<Props> = ({
+  categories,
+  transactionType,
+  selectedId,
+  onSelect,
+}) => {
+  const transformValue = transactionType === 'income' ? 'translateX(0%)' : 'translateX(-50%)';
+
+  return (
+    <div className="mt-6">
+      <h2>Выберите категорию:</h2>
+
+      <div className="m-3 overflow-hidden">
+        <div
+          className="flex w-[200%] transition-transform duration-300 ease-in-out"
+          style={{ transform: transformValue }}>
+          <Panel
+            categories={forFlow(categories, 'income')}
+            side="income"
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+          <Panel
+            categories={forFlow(categories, 'expense')}
+            side="expense"
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        </div>
       </div>
     </div>
   );

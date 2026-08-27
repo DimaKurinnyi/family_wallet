@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { requireUserId } from '@/server/session';
+import { updateCategorySchema } from '@/server/validation/createCategory.schema';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -50,16 +51,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const categoryId = id;
     const body = await request.json();
-    const name = body?.name?.trim();
-    const iconId = body?.iconId;
 
-    if (!name && !iconId) {
-      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+    // Раньше проверки были ручными, и на запросе с одной лишь иконкой
+    // выражение name.length падало на undefined.
+    const parsed = updateCategorySchema.safeParse({
+      name: typeof body?.name === 'string' ? body.name.trim() : undefined,
+      iconId: body?.iconId,
+      flow: body?.flow,
+    });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-
-    if ((name && name.length < 2) || name.length > 30) {
-      return NextResponse.json({ error: 'Name must be between 2 and 30 characters' }, { status: 400 });
-    }
+    const { name, iconId, flow } = parsed.data;
     const category = await prisma.category.findUnique({
       where: { id: categoryId },
     });
@@ -94,6 +97,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: {
         ...(name && { name }),
         ...(iconId && { iconId }),
+        ...(flow && { flow }),
       },
     });
     return NextResponse.json(update);
