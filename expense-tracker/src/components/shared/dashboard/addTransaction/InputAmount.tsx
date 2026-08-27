@@ -21,7 +21,7 @@ export const InputAmount: React.FC<Props> = ({
   const isIncome = transactionType === 'income';
 
   return (
-    <div className={cn('mt-8 p-3 rounded-2xl', isIncome ? 'bg-[#f2ecfd]' : 'bg-[#fdf0ec]')}>
+    <div className={cn('p-3 rounded-2xl', isIncome ? 'bg-[#f2ecfd]' : 'bg-[#fdf0ec]')}>
       <h2 className="text-lg sm:text-xl font-bold">Сумма:</h2>
 
       <div className="flex items-center justify-between mt-4">

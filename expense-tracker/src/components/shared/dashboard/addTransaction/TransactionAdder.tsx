@@ -71,12 +71,16 @@ export const TransactionAdder: React.FC<Props> = ({
   const transformValue = transactionType === 'income' ? 'translateX(0%)' : 'translateX(-50%)';
 
   return (
-    <div className="mt-6">
-      <h2>Выберите категорию:</h2>
+    // Занимает всё свободное место между выбором типа и формой суммы.
+    // min-h-0 обязателен: без него flex-элемент не даёт себя сжать,
+    // и скроллиться начинает вся панель целиком.
+    <div className="flex flex-col flex-1 min-h-0 mt-4">
+      <h2 className="shrink-0 pb-2">Выберите категорию:</h2>
 
-      <div className="my-3 overflow-hidden">
+      {/* overflow-x-hidden — маска для переезда панелей, overflow-y-auto — скролл иконок */}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div
-          className="flex w-[200%] transition-transform duration-300 ease-in-out"
+          className="flex w-[200%] items-start transition-transform duration-300 ease-in-out"
           style={{ transform: transformValue }}>
           <Panel
             categories={forFlow(categories, 'income')}

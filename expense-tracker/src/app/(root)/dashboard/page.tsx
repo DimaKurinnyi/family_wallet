@@ -66,7 +66,6 @@ export default async function Dashboard() {
           expense={summary.expense}
           walletName={activeWallet?.name}
         />
-        <div />
       </div>
       <Transactions className="max-w-[600px]" title="Операции" transactions={transactionViews} />
     </DashboardContainer>

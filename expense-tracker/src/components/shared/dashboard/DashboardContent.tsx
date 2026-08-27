@@ -9,7 +9,7 @@ interface Props {
 
 export const DashboardContent: React.FC<Props> = ({ balance, income, expense, walletName }) => {
   return (
-    <div className="mt-12">
+    <div className="mt-8 sm:mt-12 w-full max-w-[460px]">
       <BalanceCard balance={balance} income={income} expense={expense} walletName={walletName} />
     </div>
   );

@@ -16,47 +16,44 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
   const { symbol } = useCurrencyStore();
 
   return (
-    <div className="flex flex-col w-full max-w-[400px] p-6 sm:p-8 rounded-4xl balance-card text-white overflow-hidden min-h-[200px] sm:min-h-[220px]">
-      <div className="flex justify-between items-start mb-10 w-full">
-        <div className="flex flex-col w-full">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-2 mb-2">
-              <h2 className="text-sm font-semibold">Баланс</h2>
-            </div>
-            {walletName ? (
-              <div className="text-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1">
-                {walletName}
-              </div>
-            ) : null}
+    // Пропорции банковской карты — 85.6×54 мм. Высота считается от ширины,
+    // поэтому карточка остаётся вытянутой на любом экране, а не квадратной.
+    <div className="flex flex-col justify-between w-full max-w-[460px] aspect-[85.6/54] p-5 sm:p-7 rounded-3xl balance-card text-white overflow-hidden">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="text-sm font-semibold opacity-90">Баланс</h2>
+        {walletName ? (
+          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 truncate max-w-[55%]">
+            {walletName}
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight break-all">
-            {symbol}
-            {format(balance)}
-          </h2>
-        </div>
+        ) : null}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col items-start">
-          <div className="flex items-center gap-3">
+      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">
+        {symbol}
+        {format(balance)}
+      </h2>
+
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col items-start min-w-0">
+          <div className="flex items-center gap-2">
             <span className="bg-white/20 p-1 rounded-full flex items-center justify-center">
-              <ArrowDown className="w-4 h-4" />
+              <ArrowDown className="w-3.5 h-3.5" />
             </span>
-            <p className="opacity-90">Доходы</p>
+            <p className="opacity-90 text-sm">Доходы</p>
           </div>
-          <h2 className="mt-2 font-semibold">
+          <h2 className="mt-1 font-semibold tabular-nums truncate">
             {symbol}
             {format(income)}
           </h2>
         </div>
-        <div className="flex flex-col items-end">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col items-end min-w-0">
+          <div className="flex items-center gap-2">
             <span className="bg-white/20 p-1 rounded-full flex items-center justify-center">
-              <ArrowUp className="w-4 h-4" />
+              <ArrowUp className="w-3.5 h-3.5" />
             </span>
-            <p className="opacity-90">Расходы</p>
+            <p className="opacity-90 text-sm">Расходы</p>
           </div>
-          <h2 className="mt-2 font-semibold">
+          <h2 className="mt-1 font-semibold tabular-nums truncate">
             {symbol}
             {format(expense)}
           </h2>

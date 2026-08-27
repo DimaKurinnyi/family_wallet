@@ -69,20 +69,23 @@ export function AddWindow({ categories, walletId, triggerClassName }: Props) {
         </div>
       </SheetTrigger>
 
-      <SheetContent className="px-3 overflow-y-auto w-full sm:max-w-md">
-        <SheetHeader>
+      <SheetContent className="w-full sm:max-w-md p-0 gap-0">
+        <SheetHeader className="shrink-0 border-b">
           <SheetTitle className="text-xl sm:text-2xl font-bold text-center">
             Новая операция
           </SheetTitle>
         </SheetHeader>
 
-        <form action={formAction}>
+        {/* Три зоны: выбор типа сверху, иконки со скроллом посередине,
+            форма суммы прижата к низу. min-h-0 не даёт средней зоне
+            растянуть форму и утащить низ за пределы экрана. */}
+        <form action={formAction} className="flex flex-col flex-1 min-h-0">
           <input type="hidden" name="walletId" value={walletId ?? ''} />
           <input type="hidden" name="type" value={transactionType} />
           <input type="hidden" name="categoryId" value={categoryId ?? ''} />
           <input type="hidden" name="amount" value={amount} />
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="shrink-0 flex items-center justify-between gap-2 px-3 pt-3">
             <button
               type="button"
               className={cn(
@@ -111,34 +114,39 @@ export function AddWindow({ categories, walletId, triggerClassName }: Props) {
             </button>
           </div>
 
-          <TransactionAdder
-            categories={categories}
-            transactionType={transactionType}
-            selectedId={categoryId}
-            onSelect={setCategoryId}
-          />
-          <InputAmount
-            transactionType={transactionType}
-            value={amount}
-            onChange={setAmount}
-            selectedCategory={selectedCategory}
-          />
-          <Input name="comment" placeholder="Комментарий (необязательно)" className="mt-4" />
+          <div className="flex flex-col flex-1 min-h-0 px-3">
+            <TransactionAdder
+              categories={categories}
+              transactionType={transactionType}
+              selectedId={categoryId}
+              onSelect={setCategoryId}
+            />
+          </div>
 
-          {state.error ? (
-            <p role="alert" className="mt-4 text-sm text-red-600 text-center">
-              {state.error}
-            </p>
-          ) : null}
+          <div className="shrink-0 border-t bg-background px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <InputAmount
+              transactionType={transactionType}
+              value={amount}
+              onChange={setAmount}
+              selectedCategory={selectedCategory}
+            />
+            <Input name="comment" placeholder="Комментарий (необязательно)" className="mt-3" />
 
-          <SheetFooter className="px-0 flex-row gap-2">
-            <Button type="submit" disabled={!canSubmit || isPending} className="flex-1">
-              {isPending ? 'Сохраняем…' : 'Сохранить'}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Закрыть
-            </Button>
-          </SheetFooter>
+            {state.error ? (
+              <p role="alert" className="mt-3 text-sm text-red-600 text-center">
+                {state.error}
+              </p>
+            ) : null}
+
+            <SheetFooter className="p-0 mt-3 flex-row gap-2">
+              <Button type="submit" disabled={!canSubmit || isPending} className="flex-1">
+                {isPending ? 'Сохраняем…' : 'Сохранить'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Закрыть
+              </Button>
+            </SheetFooter>
+          </div>
         </form>
       </SheetContent>
     </Sheet>
