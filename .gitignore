@@ -44,3 +44,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# impeccable: машинно-локальные файлы скила
+.impeccable/
+.claude/settings.local.json
