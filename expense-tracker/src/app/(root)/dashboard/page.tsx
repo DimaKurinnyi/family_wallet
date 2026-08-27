@@ -1,22 +1,73 @@
 import { DashboardContainer, DashboardContent, Header, Transactions } from '@/components/shared';
+import type { TransactionView } from '@/components/shared/dashboard/Transactions';
+import { resolveActiveWallet } from '@/server/activeWallet';
+import {
+  getCategoriesForUser,
+  getWalletSummary,
+  getWalletTransactions,
+} from '@/server/dashboard.service';
 import { getCurrentUser } from '@/server/session';
+import { getUserWallets } from '@/server/wallet.service';
+
+// Дату форматируем здесь, а не в клиентском компоненте: иначе серверный и
+// клиентский рендер разойдутся из-за разных часовых поясов.
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 export default async function Dashboard() {
   const user = await getCurrentUser();
 
+  const [wallets, categories] = await Promise.all([
+    getUserWallets(user.id),
+    getCategoriesForUser(user.id),
+  ]);
+
+  const activeWallet = await resolveActiveWallet(wallets);
+
+  const [summary, transactions] = activeWallet
+    ? await Promise.all([
+        getWalletSummary(activeWallet.id),
+        getWalletTransactions(activeWallet.id),
+      ])
+    : [{ income: 0, expense: 0, balance: 0 }, []];
+
+  const transactionViews: TransactionView[] = transactions.map((transaction) => ({
+    id: transaction.id,
+    categoryName: transaction.category?.name ?? 'Без категории',
+    iconName: transaction.category?.icon?.name ?? null,
+    amount: transaction.amount,
+    type: transaction.type,
+    dateLabel: dateFormatter.format(transaction.createdAt),
+    comment: transaction.comment,
+  }));
+
+  const categoryOptions = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    iconName: category.icon?.name ?? null,
+  }));
+
   return (
-    <DashboardContainer>
-      <Header userName={user.name ?? user.email} />
+    <DashboardContainer categories={categoryOptions} walletId={activeWallet?.id ?? null}>
+      <Header
+        userName={user.name ?? user.email}
+        wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name }))}
+        activeWalletId={activeWallet?.id ?? ''}
+      />
       <div className="flex justify-around items-start">
-        <DashboardContent />
-        <div className="">Schedule</div>
+        <DashboardContent
+          balance={summary.balance}
+          income={summary.income}
+          expense={summary.expense}
+          walletName={activeWallet?.name}
+        />
+        <div />
       </div>
-      <Transactions className="w-[600px]" title="Transactions" />
+      <Transactions className="w-[600px]" title="Операции" transactions={transactionViews} />
     </DashboardContainer>
   );
 }
-// внесу некоторые коректы 
-// 1 ui деелаем с помощю shadcn
-// 2 нужен еще добавить i18n для мультиязычности (возможно чтото другое используя best practics, а возможно сылаясь на анализ вобще не нужен этот функцыонал ссылаясь на то что во многих браузерах есть встроеный перевод)
-// 3 нужно что б это веб приложение можно было добавить как приложенмие с иконкой на рабочий стол телефона
-// 4 каккие страницы и что на них будет нужно сразу обсуждать или после разработки схемы?

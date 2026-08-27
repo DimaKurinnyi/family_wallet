@@ -27,7 +27,7 @@ export async function registerUser(data: RegisterInput) {
       },
       wallets: {
         create: {
-          name: 'Default Wallet',
+          name: 'Личный кошелёк',
           type: 'personal',
         },
       },

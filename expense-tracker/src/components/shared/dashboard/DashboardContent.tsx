@@ -1,10 +1,16 @@
-import React from 'react'
-import { BalanceCard } from './BalanceCard'
+import { BalanceCard } from './BalanceCard';
 
-export const DashboardContent = () => {
-  return (
-    <div className='mt-12'>
-      <BalanceCard/>
-    </div>
-  )
+interface Props {
+  balance: number;
+  income: number;
+  expense: number;
+  walletName?: string;
 }
+
+export const DashboardContent: React.FC<Props> = ({ balance, income, expense, walletName }) => {
+  return (
+    <div className="mt-12">
+      <BalanceCard balance={balance} income={income} expense={expense} walletName={walletName} />
+    </div>
+  );
+};

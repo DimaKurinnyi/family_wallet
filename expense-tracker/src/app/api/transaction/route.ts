@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { requireUserId } from '@/server/session';
+import { createTransactionSchema } from '@/server/validation/transaction.schema';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -7,15 +8,13 @@ export async function POST(req: Request) {
     const userId = await requireUserId();
     const body = await req.json();
 
-    const { walletId, amount, categoryId, comment, type } = body;
-
-    if (!walletId || !amount || !categoryId || !type) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const parsed = createTransactionSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    if (amount <= 0) {
-      return NextResponse.json({ error: 'Amount must be greater than zero' }, { status: 400 });
-    }
+    const { walletId, amount, categoryId, comment, type } = parsed.data;
+
     const wallet = await prisma.wallet.findFirst({
       where: { id: walletId, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
     });

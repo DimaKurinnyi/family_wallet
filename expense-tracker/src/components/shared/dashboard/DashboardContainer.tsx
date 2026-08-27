@@ -1,7 +1,14 @@
-import React from 'react'
+import React from 'react';
 import { SideBar } from './SideBar';
- 
-export const DashboardContainer: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+import type { CategoryOption } from './addTransaction/TransactionAdder';
+
+interface Props {
+  children?: React.ReactNode;
+  categories: CategoryOption[];
+  walletId: string | null;
+}
+
+export const DashboardContainer: React.FC<Props> = ({ children, categories, walletId }) => {
   return (
     <div
       className="min-h-screen w-full p-10 flex items-center justify-center"
@@ -18,7 +25,7 @@ export const DashboardContainer: React.FC<{ children?: React.ReactNode }> = ({ c
 
         {/* SideBar — прижат к внутренней правой части белого блока и центрирован по вертикали */}
         <div className="absolute -right-27 top-1/2 -translate-y-1/2 hover:right-0 transition-all duration-300">
-          <SideBar />
+          <SideBar categories={categories} walletId={walletId} />
         </div>
       </div>
     </div>

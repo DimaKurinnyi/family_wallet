@@ -5,8 +5,11 @@ export async function getUserWallets(userId: string) {
     where: {
       OR: [{ ownerId: userId }, { members: { some: { userId } } }],
     },
+    // По возрастанию: личный кошелёк создаётся при регистрации и остаётся
+    // первым в списке, то есть выбором по умолчанию. При сортировке по
+    // убыванию активным молча становился бы каждый вновь созданный кошелёк.
     orderBy: {
-      createdAt: 'desc',
+      createdAt: 'asc',
     },
   });
 }
