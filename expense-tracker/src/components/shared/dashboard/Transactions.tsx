@@ -28,17 +28,17 @@ export const Transactions: React.FC<Props> = ({ transactions, className, title }
   const { symbol } = useCurrencyStore();
 
   return (
-    <div className={cn('mt-20', className)}>
-      <div className="flex justify-between items-center mx-8">
+    <div className={cn('mt-10 sm:mt-16 w-full', className)}>
+      <div className="flex justify-between items-center mx-2 sm:mx-8">
         <h2 className="font-semibold text-2xl">{title}</h2>
       </div>
 
       {transactions.length === 0 ? (
-        <p className="mx-8 mt-6 text-gray-400">
+        <p className="mx-2 sm:mx-8 mt-6 text-gray-400">
           Пока пусто. Добавьте первую операцию кнопкой «плюс» справа.
         </p>
       ) : (
-        <div className="mx-8">
+        <div className="mx-2 sm:mx-8">
           {transactions.map((transaction) => (
             <div key={transaction.id} className="flex justify-between items-center mt-6">
               <div className="flex items-center gap-4">
@@ -55,7 +55,7 @@ export const Transactions: React.FC<Props> = ({ transactions, className, title }
               </div>
               <p
                 className={cn(
-                  'font-semibold text-md tabular-nums',
+                  'font-semibold text-sm sm:text-md tabular-nums whitespace-nowrap',
                   transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
                 )}>
                 {transaction.type === 'income' ? '+' : '−'}

@@ -9,7 +9,7 @@ interface Props {
 
 export const HomeTitle: React.FC<Props> = ({ className }) => {
   return (
-    <div className={cn(' flex flex-col items-center justify-center min-h-screen', className)}>
+    <div className={cn('flex flex-col items-center justify-center min-h-screen text-center px-2', className)}>
       <Title text="Welcome to Expense Tracker" size="2xl" className="text-white font-bold" />
       <Title text="create-next-app for you and your family" size="sm" className="text-gray-900 font-medium" />
       <ButtonGroup />

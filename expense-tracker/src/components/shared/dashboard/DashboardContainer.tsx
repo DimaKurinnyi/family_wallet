@@ -1,4 +1,5 @@
 import React from 'react';
+import { MobileNav } from './MobileNav';
 import { SideBar } from './SideBar';
 import type { CategoryOption } from './addTransaction/TransactionAdder';
 
@@ -11,23 +12,21 @@ interface Props {
 export const DashboardContainer: React.FC<Props> = ({ children, categories, walletId }) => {
   return (
     <div
-      className="min-h-screen w-full p-10 flex items-center justify-center"
+      className="min-h-screen w-full p-3 sm:p-6 md:p-10 flex items-start md:items-center justify-center"
       style={{
-        minHeight: '100vh',
-        background:
-          "linear-gradient(135deg, #6fb3ff 0%, #7e92ff 35%, #c06bff 65%, #e094c8 100%)",
+        background: 'linear-gradient(135deg, #6fb3ff 0%, #7e92ff 35%, #c06bff 65%, #e094c8 100%)',
       }}>
-      <div className="w-[90vw] bg-white p-10   rounded-2xl min-h-[90vh] shadow-lg overflow-hidden relative">
-        {/* Контент страницы */}
-        <div className="h-full">
-          {children}
-        </div>
+      {/* pb-28 на телефоне — чтобы нижняя панель не накрывала содержимое */}
+      <div className="w-full md:w-[90vw] bg-white p-4 sm:p-6 md:p-10 pb-28 md:pb-10 rounded-2xl min-h-[90vh] shadow-lg overflow-hidden relative">
+        <div className="h-full">{children}</div>
 
-        {/* SideBar — прижат к внутренней правой части белого блока и центрирован по вертикали */}
-        <div className="absolute -right-27 top-1/2 -translate-y-1/2 hover:right-0 transition-all duration-300">
+        {/* Десктоп: панель выезжает справа по наведению */}
+        <div className="hidden md:block absolute -right-27 top-1/2 -translate-y-1/2 hover:right-0 transition-all duration-300">
           <SideBar categories={categories} walletId={walletId} />
         </div>
       </div>
+
+      <MobileNav categories={categories} walletId={walletId} />
     </div>
   );
 };

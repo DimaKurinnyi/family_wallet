@@ -59,7 +59,7 @@ export default async function Dashboard() {
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name }))}
         activeWalletId={activeWallet?.id ?? ''}
       />
-      <div className="flex justify-around items-start">
+      <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
         <DashboardContent
           balance={summary.balance}
           income={summary.income}
@@ -68,7 +68,7 @@ export default async function Dashboard() {
         />
         <div />
       </div>
-      <Transactions className="w-[600px]" title="Операции" transactions={transactionViews} />
+      <Transactions className="max-w-[600px]" title="Операции" transactions={transactionViews} />
     </DashboardContainer>
   );
 }

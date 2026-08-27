@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 import { BanknoteArrowUp, Plus } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
 import { InputAmount } from './InputAmount';
@@ -21,10 +22,13 @@ const initialState: TransactionFormState = { error: null, ok: false };
 interface Props {
   categories: CategoryOption[];
   walletId: string | null;
+  triggerClassName?: string;
 }
 
-export function AddWindow({ categories, walletId }: Props) {
-  const [transactionType, setTransactionType] = useState<'income' | 'expense' | ''>('');
+export function AddWindow({ categories, walletId, triggerClassName }: Props) {
+  // Расход выбран сразу: подавляющее большинство операций — траты,
+  // и лишний клик перед вводом суммы не нужен.
+  const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
   const [open, setOpen] = useState(false);
@@ -32,12 +36,11 @@ export function AddWindow({ categories, walletId }: Props) {
   const [state, formAction, isPending] = useActionState(createTransactionAction, initialState);
 
   const reset = () => {
-    setTransactionType('');
+    setTransactionType('expense');
     setCategoryId(null);
     setAmount('');
   };
 
-  // Успешно сохранили — закрываем панель и чистим форму.
   useEffect(() => {
     if (state.ok) {
       setOpen(false);
@@ -45,7 +48,8 @@ export function AddWindow({ categories, walletId }: Props) {
     }
   }, [state.ok]);
 
-  const canSubmit = Boolean(walletId) && Boolean(transactionType) && Boolean(categoryId) && Number(amount) > 0;
+  const selectedCategory = categories.find((category) => category.id === categoryId) ?? null;
+  const canSubmit = Boolean(walletId) && Boolean(categoryId) && Number(amount) > 0;
 
   return (
     <Sheet
@@ -55,18 +59,21 @@ export function AddWindow({ categories, walletId }: Props) {
         setOpen(isOpen);
       }}>
       <SheetTrigger asChild>
-        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 p-1.5 bg-white rounded-full">
+        <div className={cn('p-1.5 bg-white rounded-full', triggerClassName)}>
           <Button
             variant="outline"
+            aria-label="Добавить операцию"
             className="rounded-full bg-[#e094c8] shadow-md shadow-[#e094c8] !h-14 !w-14 hover:!bg-[#e094c8] hover:scale-110 transition-transform border-0">
             <Plus className="text-white h-10 w-10" />
           </Button>
         </div>
       </SheetTrigger>
 
-      <SheetContent className="px-3 overflow-y-auto">
+      <SheetContent className="px-3 overflow-y-auto w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-2xl font-bold text-center">Новая операция</SheetTitle>
+          <SheetTitle className="text-xl sm:text-2xl font-bold text-center">
+            Новая операция
+          </SheetTitle>
         </SheetHeader>
 
         <form action={formAction}>
@@ -75,14 +82,13 @@ export function AddWindow({ categories, walletId }: Props) {
           <input type="hidden" name="categoryId" value={categoryId ?? ''} />
           <input type="hidden" name="amount" value={amount} />
 
-          <div className="flex items-center justify-between *:flex *:flex-col *:items-center *:gap-2 *:cursor-pointer *:hover:scale-105 *:transition-transform *:px-10 *:py-4 *:rounded-lg">
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
-              className={
-                transactionType === 'income'
-                  ? 'bg-[#f2ecfd] border-2 border-[#8144e9]'
-                  : 'bg-[#f2ecfd]'
-              }
+              className={cn(
+                'flex flex-1 flex-col items-center gap-2 px-4 sm:px-10 py-4 rounded-lg cursor-pointer hover:scale-105 transition-transform bg-[#f2ecfd]',
+                transactionType === 'income' && 'border-2 border-[#8144e9]'
+              )}
               onClick={() => {
                 setTransactionType('income');
                 setCategoryId(null);
@@ -92,11 +98,10 @@ export function AddWindow({ categories, walletId }: Props) {
             </button>
             <button
               type="button"
-              className={
-                transactionType === 'expense'
-                  ? 'bg-[#fdf0ec] border-2 border-[#ee7048]'
-                  : 'bg-[#fdf0ec]'
-              }
+              className={cn(
+                'flex flex-1 flex-col items-center gap-2 px-4 sm:px-10 py-4 rounded-lg cursor-pointer hover:scale-105 transition-transform bg-[#fdf0ec]',
+                transactionType === 'expense' && 'border-2 border-[#ee7048]'
+              )}
               onClick={() => {
                 setTransactionType('expense');
                 setCategoryId(null);
@@ -106,22 +111,19 @@ export function AddWindow({ categories, walletId }: Props) {
             </button>
           </div>
 
-          {transactionType ? (
-            <div>
-              <TransactionAdder
-                categories={categories}
-                transactionType={transactionType}
-                selectedId={categoryId}
-                onSelect={setCategoryId}
-              />
-              <InputAmount transactionType={transactionType} value={amount} onChange={setAmount} />
-              <Input name="comment" placeholder="Комментарий (необязательно)" className="mt-4" />
-            </div>
-          ) : (
-            <p className="mt-8 text-center text-gray-500">
-              Выберите, доход это или расход.
-            </p>
-          )}
+          <TransactionAdder
+            categories={categories}
+            transactionType={transactionType}
+            selectedId={categoryId}
+            onSelect={setCategoryId}
+          />
+          <InputAmount
+            transactionType={transactionType}
+            value={amount}
+            onChange={setAmount}
+            selectedCategory={selectedCategory}
+          />
+          <Input name="comment" placeholder="Комментарий (необязательно)" className="mt-4" />
 
           {state.error ? (
             <p role="alert" className="mt-4 text-sm text-red-600 text-center">
@@ -129,8 +131,8 @@ export function AddWindow({ categories, walletId }: Props) {
             </p>
           ) : null}
 
-          <SheetFooter className="px-0">
-            <Button type="submit" disabled={!canSubmit || isPending}>
+          <SheetFooter className="px-0 flex-row gap-2">
+            <Button type="submit" disabled={!canSubmit || isPending} className="flex-1">
               {isPending ? 'Сохраняем…' : 'Сохранить'}
             </Button>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

@@ -16,7 +16,7 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
   const { symbol } = useCurrencyStore();
 
   return (
-    <div className="flex flex-col w-[400px] p-8 rounded-4xl balance-card text-white overflow-hidden min-h-[220px]">
+    <div className="flex flex-col w-full max-w-[400px] p-6 sm:p-8 rounded-4xl balance-card text-white overflow-hidden min-h-[200px] sm:min-h-[220px]">
       <div className="flex justify-between items-start mb-10 w-full">
         <div className="flex flex-col w-full">
           <div className="flex justify-between items-center w-full">
@@ -29,7 +29,7 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
               </div>
             ) : null}
           </div>
-          <h2 className="text-4xl font-extrabold tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight break-all">
             {symbol}
             {format(balance)}
           </h2>

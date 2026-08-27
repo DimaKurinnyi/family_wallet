@@ -14,7 +14,7 @@ export type CategoryOption = {
 
 interface Props {
   categories: CategoryOption[];
-  transactionType: 'income' | 'expense' | '';
+  transactionType: 'income' | 'expense';
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
@@ -36,14 +36,14 @@ const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect })
 
   return (
     <div className="w-1/2 flex-none">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {categories.map((category) => (
           <button
             key={category.id}
             type="button"
             onClick={() => onSelect(category.id)}
             className={cn(
-              'flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors hover:shadow-sm',
+              'flex flex-col items-center gap-1.5 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors hover:shadow-sm',
               isIncome ? 'hover:bg-[#f2ecfd]' : 'hover:bg-[#fdf0ec]',
               selectedId === category.id && (isIncome ? 'bg-[#f2ecfd]' : 'bg-[#fdf0ec]')
             )}>
@@ -54,7 +54,7 @@ const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect })
               )}>
               <CategoryIcon name={category.iconName} />
             </div>
-            <p className="text-sm text-center">{category.name}</p>
+            <p className="text-xs sm:text-sm text-center leading-tight">{category.name}</p>
           </button>
         ))}
       </div>
@@ -74,7 +74,7 @@ export const TransactionAdder: React.FC<Props> = ({
     <div className="mt-6">
       <h2>Выберите категорию:</h2>
 
-      <div className="m-3 overflow-hidden">
+      <div className="my-3 overflow-hidden">
         <div
           className="flex w-[200%] transition-transform duration-300 ease-in-out"
           style={{ transform: transformValue }}>

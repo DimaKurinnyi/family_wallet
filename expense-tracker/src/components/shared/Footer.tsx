@@ -5,10 +5,10 @@ import { Globe } from 'lucide-react';
 export const Footer = () => {
   return (
     <div className=" py-10">
-      <div className="flex  items-center justify-around align-center gap-2 bg-white/5 dark:bg-white/55 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl p-14 ">
+      <div className="flex items-center justify-around gap-2 bg-white/5 dark:bg-white/55 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl p-6 sm:p-10 lg:p-14">
         <div className="flex-1">
-          <div className="grid grid-cols-6 gap-1">
-            <div className=" flex flex-col items-start justify-between">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-1">
+            <div className="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col items-start gap-4 lg:justify-between">
               <Image src="/assets/icon-expense-2.svg" alt="logo" width={35} height={35} />
               <div className=" flex items-center ">
                 <Globe className='w-4 h-4' />
