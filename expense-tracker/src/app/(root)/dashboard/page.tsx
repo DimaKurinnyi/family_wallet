@@ -1,9 +1,12 @@
 import { DashboardContainer, DashboardContent, Header, Transactions } from '@/components/shared';
+import { getCurrentUser } from '@/server/session';
 
-export default function Dashboard() {
+export default async function Dashboard() {
+  const user = await getCurrentUser();
+
   return (
     <DashboardContainer>
-      <Header />
+      <Header userName={user.name ?? user.email} />
       <div className="flex justify-around items-start">
         <DashboardContent />
         <div className="">Schedule</div>

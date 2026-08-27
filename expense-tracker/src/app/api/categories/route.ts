@@ -1,12 +1,11 @@
 import prisma from '@/lib/prisma';
-import { getUserId } from '@/server/getUserId';
+import { requireUserId } from '@/server/session';
 import { createCategorySchema } from '@/server/validation/createCategory.schema';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const userId = await getUserId();
+    const userId = await requireUserId();
 
     const categories = await prisma.category.findMany({
       where: {
@@ -23,12 +22,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const userId = (await cookies()).get('userId')?.value;
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
   try {
+    const userId = await requireUserId();
     const body = await req.json();
 
     const parsed = createCategorySchema.safeParse(body);

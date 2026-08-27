@@ -1,14 +1,10 @@
 import prisma from '@/lib/prisma';
-import { cookies } from 'next/headers';
+import { requireUserId } from '@/server/session';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = (await cookies()).get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorize' }, { status: 401 });
-    }
+    const userId = await requireUserId();
     const { id } = await params;
     const categoryId = id;
 
@@ -50,11 +46,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 }
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = (await cookies()).get('userId')?.value;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorize' }, { status: 401 });
-    }
+    const userId = await requireUserId();
     const { id } = await params;
     const categoryId = id;
     const body = await request.json();

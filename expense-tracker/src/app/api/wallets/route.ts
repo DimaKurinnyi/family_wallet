@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/server/getCurrentUser';
+import { getCurrentUser } from '@/server/session';
 import { createWalletSchema } from '@/server/validation/wallet.schema';
 import { createWallet, getUserWallets } from '@/server/wallet.service';
 import { NextResponse } from 'next/server';

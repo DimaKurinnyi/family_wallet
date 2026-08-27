@@ -1,10 +1,10 @@
 import prisma from '@/lib/prisma';
-import { getUserId } from '@/server/getUserId';
+import { requireUserId } from '@/server/session';
 import { NextResponse } from 'next/server';
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId();
+    const userId = await requireUserId();
     const { id } = await params;
     const transactionId = id;
 
@@ -37,7 +37,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const userId = await getUserId();
+    const userId = await requireUserId();
     const { id } = await params;
     const transactionId = id;
     const body = await request.json();

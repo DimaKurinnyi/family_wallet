@@ -1,15 +1,10 @@
 import prisma from '@/lib/prisma';
-import { getUserId } from '@/server/getUserId';
-import { cookies } from 'next/headers';
+import { requireUserId } from '@/server/session';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
-  const userId = (await cookies()).get('userId')?.value;
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorize' }, { status: 401 });
-  }
   try {
+    const userId = await requireUserId();
     const body = await req.json();
 
     const { walletId, amount, categoryId, comment, type } = body;
@@ -57,7 +52,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const userId = await getUserId();
+  const userId = await requireUserId();
   const { searchParams } = new URL(req.url);
   const walletId = searchParams.get('walletId');
 

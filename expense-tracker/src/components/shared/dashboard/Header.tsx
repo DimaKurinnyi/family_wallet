@@ -5,11 +5,12 @@ import React from 'react'
 import {LogOutButton} from './LogUotButton';
 import CurrencySwitcher from './CurrencySwitcher';
 
-interface Props{
-    className?: string;
+interface Props {
+  className?: string;
+  userName?: string | null;
 }
 
-export const Header: React.FC<Props> = ( className) => {
+export const Header: React.FC<Props> = ({ className, userName }) => {
   return (
     <div
     className={cn('flex items-center justify-between', className)}>
@@ -25,7 +26,7 @@ export const Header: React.FC<Props> = ( className) => {
         {/* right side */}
         <div className="flex items-center gap-4">
           <CurrencySwitcher/>
-            <p>Welcome back,User</p>
+            <p>С возвращением, {userName ?? 'друг'}</p>
             <LogOutButton/>
         </div>
 
