@@ -18,6 +18,7 @@ async function seedIcons() {
     { name: 'HeartPulse', type: IconType.system },
     { name: 'Gamepad2', type: IconType.system },
     { name: 'Wallet', type: IconType.system },
+    { name: 'GraduationCap', type: IconType.system },
 
     // CUSTOM (для пользовательских категорий)
     { name: 'Star', type: IconType.custom },
@@ -68,7 +69,7 @@ async function seedCategories() {
     { name: 'Подарки', icon: 'ShoppingCart' },
     { name: 'Дом', icon: 'Home' },
     { name: 'Путешествия', icon: 'Car' },
-    { name: 'Образование', icon: 'GraduationCap' }, // fallback system icon
+    { name: 'Образование', icon: 'GraduationCap' },
     { name: 'Музыка', icon: 'Gamepad2' },
     { name: 'Одежда', icon: 'ShoppingCart' },
     { name: 'Личное', icon: 'Home' },

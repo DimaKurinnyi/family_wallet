@@ -3,7 +3,7 @@ import { updateWalletSchema } from '@/server/validation/wallet.schema';
 import { deleteWallet, updateWallet } from '@/server/wallet.service';
 import { NextResponse } from 'next/server';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     const body = await req.json();
@@ -12,7 +12,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json(parsed.error.flatten(), { status: 400 });
     }
 
-    const wallet = await updateWallet(user.id, params.id, parsed.data.name);
+    const { id } = await params;
+    const wallet = await updateWallet(user.id, id, parsed.data.name);
     return NextResponse.json(wallet);
   } catch (error) {
     console.error('Error in PUT /wallets/[id] route:', error);

@@ -3,7 +3,7 @@ import { createWalletSchema } from '@/server/validation/wallet.schema';
 import { createWallet, getUserWallets } from '@/server/wallet.service';
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const user = await getCurrentUser();
     const wallets = await getUserWallets(user.id);
