@@ -20,7 +20,10 @@ export async function getWalletSummary(walletId: string) {
 export async function getWalletTransactions(walletId: string, take = 8) {
   return prisma.transaction.findMany({
     where: { walletId },
-    include: { category: { include: { icon: true } } },
+    include: {
+      category: { include: { icon: true } },
+      user: { select: { id: true, name: true, email: true } },
+    },
     orderBy: { createdAt: 'desc' },
     take,
   });

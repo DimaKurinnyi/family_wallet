@@ -13,6 +13,9 @@ export type TransactionView = {
   type: 'income' | 'expense';
   dateLabel: string;
   comment: string | null;
+  // Заполняется только для общего кошелька: в личном автор всегда один
+  // и подпись была бы шумом.
+  authorName: string | null;
 };
 
 interface Props {
@@ -48,6 +51,7 @@ export const Transactions: React.FC<Props> = ({ transactions, className, title }
                 <div className="flex flex-col gap-1">
                   <p className="font-medium text-md">{transaction.categoryName}</p>
                   <p className="text-sm text-gray-400">
+                    {transaction.authorName ? `${transaction.authorName} · ` : ''}
                     {transaction.comment ? `${transaction.comment} · ` : ''}
                     {transaction.dateLabel}
                   </p>

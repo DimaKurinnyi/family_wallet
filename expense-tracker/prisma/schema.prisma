@@ -21,6 +21,7 @@ model User {
   wallets       Wallet[]       @relation("UserWallets")
   createdAt     DateTime       @default(now())
   walletMembers WalletMember[]
+  sentInvites   WalletInvite[] @relation("SentInvites")
   accounts      Account[]
   categories    Category[]
   transactions  Transaction[]
@@ -30,19 +31,45 @@ model Wallet {
   id           String         @id @default(cuid())
   name         String
   type         WalletType // "personal" or "shared"
-  ownerId      String?
-  owner        User?          @relation("UserWallets", fields: [ownerId], references: [id])
+  // Владелец есть у любого кошелька, включая общий: он управляет
+  // участниками, переименованием и удалением.
+  ownerId      String
+  owner        User           @relation("UserWallets", fields: [ownerId], references: [id])
   members      WalletMember[]
+  invites      WalletInvite[]
   transactions Transaction[]
   createdAt    DateTime       @default(now())
 }
 
+// Участники общего кошелька, кроме владельца: он определяется Wallet.ownerId.
 model WalletMember {
-  id       String @id @default(cuid())
-  userId   String
-  walletId String
-  user     User   @relation(fields: [userId], references: [id])
-  wallet   Wallet @relation(fields: [walletId], references: [id])
+  id        String   @id @default(cuid())
+  userId    String
+  walletId  String
+  user      User     @relation(fields: [userId], references: [id])
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // Без этого одного человека можно было добавить в кошелёк дважды.
+  @@unique([walletId, userId])
+}
+
+model WalletInvite {
+  id          String       @id @default(cuid())
+  walletId    String
+  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  // Приглашение привязано к почте: ссылку можно переслать, но принять её
+  // сможет только тот, на кого она выписана.
+  email       String
+  token       String       @unique
+  status      InviteStatus @default(pending)
+  invitedById String
+  invitedBy   User         @relation("SentInvites", fields: [invitedById], references: [id])
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+
+  @@index([walletId])
 }
 
 model Icon {
@@ -121,6 +148,12 @@ enum TransactionType {
 enum CategoryType {
   system
   custom
+}
+
+enum InviteStatus {
+  pending
+  accepted
+  revoked
 }
 
 enum CategoryFlow {

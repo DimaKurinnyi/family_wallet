@@ -35,6 +35,8 @@ export default async function Dashboard() {
       ])
     : [{ income: 0, expense: 0, balance: 0 }, []];
 
+  const isShared = activeWallet?.type === 'shared';
+
   const transactionViews: TransactionView[] = transactions.map((transaction) => ({
     id: transaction.id,
     categoryName: transaction.category?.name ?? 'Без категории',
@@ -43,6 +45,7 @@ export default async function Dashboard() {
     type: transaction.type,
     dateLabel: dateFormatter.format(transaction.createdAt),
     comment: transaction.comment,
+    authorName: isShared ? transaction.user.name?.trim() || transaction.user.email : null,
   }));
 
   const categoryOptions = categories.map((category) => ({

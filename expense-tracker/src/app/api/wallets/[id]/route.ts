@@ -1,7 +1,15 @@
 import { getCurrentUser } from '@/server/session';
 import { updateWalletSchema } from '@/server/validation/wallet.schema';
-import { deleteWallet, updateWallet } from '@/server/wallet.service';
+import { deleteWallet, updateWallet, WalletError } from '@/server/wallet.service';
 import { NextResponse } from 'next/server';
+
+function toResponse(error: unknown, route: string) {
+  if (error instanceof WalletError) {
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+  console.error(`Error in ${route}:`, error);
+  return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+}
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,27 +24,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const wallet = await updateWallet(user.id, id, parsed.data.name);
     return NextResponse.json(wallet);
   } catch (error) {
-    console.error('Error in PUT /wallets/[id] route:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return toResponse(error, 'PUT /wallets/[id]');
   }
 }
 
-export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
-  console.log('🔥 DELETE HANDLER CALLED');
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await context.params;
-    console.log('🔥 WALLET ID FROM PARAMS:', id);
-
     const user = await getCurrentUser();
-    console.log('🔥 USER ID:', user.id);
-
+    const { id } = await params;
     await deleteWallet(user.id, id);
-
-    console.log('🔥 DELETE FINISHED');
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Error in DELETE /wallets/[id] route:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return toResponse(error, 'DELETE /wallets/[id]');
   }
 }
