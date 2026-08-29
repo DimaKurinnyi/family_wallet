@@ -1,10 +1,10 @@
-import { DashboardContainer, DashboardContent, Header, MonthlyExpenses, Transactions } from '@/components/shared';
-import type { MonthPoint } from '@/components/shared/dashboard/MonthlyExpenses';
+import { DashboardContainer, DashboardContent, Header, MonthlyFlow, Transactions } from '@/components/shared';
+import type { MonthPoint } from '@/components/shared/dashboard/MonthlyFlow';
 import type { TransactionView } from '@/components/shared/dashboard/Transactions';
 import { resolveActiveWallet } from '@/server/activeWallet';
 import {
   getCategoriesForUser,
-  getMonthlyExpenses,
+  getMonthlyTotals,
   getWalletSummaries,
   getWalletTransactions,
 } from '@/server/dashboard.service';
@@ -33,10 +33,10 @@ export default async function Dashboard() {
 
   const activeWallet = await resolveActiveWallet(wallets);
 
-  const [summaries, transactions, monthlyExpenses] = await Promise.all([
+  const [summaries, transactions, monthlyTotals] = await Promise.all([
     getWalletSummaries(wallets.map((wallet) => wallet.id)),
     activeWallet ? getWalletTransactions(activeWallet.id) : [],
-    activeWallet ? getMonthlyExpenses(activeWallet.id) : [],
+    activeWallet ? getMonthlyTotals(activeWallet.id) : [],
   ]);
 
   const walletSummaries = wallets.map((wallet) => ({
@@ -59,11 +59,12 @@ export default async function Dashboard() {
     authorName: isShared ? transaction.user.name?.trim() || transaction.user.email : null,
   }));
 
-  const monthPoints: MonthPoint[] = monthlyExpenses.map((month) => ({
+  const monthPoints: MonthPoint[] = monthlyTotals.map((month) => ({
     key: month.key,
     label: monthShort.format(month.date).replace('.', ''),
     fullLabel: monthFull.format(month.date),
-    total: month.total,
+    income: month.income,
+    expense: month.expense,
   }));
 
   const categoryOptions = categories.map((category) => ({
@@ -83,7 +84,7 @@ export default async function Dashboard() {
       <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
         <DashboardContent wallets={walletSummaries} activeWalletId={activeWallet?.id ?? ''} />
       </div>
-      <MonthlyExpenses months={monthPoints} className="mt-8 w-full max-w-[600px] mx-auto" />
+      <MonthlyFlow months={monthPoints} className="mt-8 w-full max-w-[600px] mx-auto" />
 
       <Transactions className="max-w-[600px] mx-auto" title="Операции" transactions={transactionViews} />
     </DashboardContainer>
