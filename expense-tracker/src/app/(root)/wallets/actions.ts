@@ -14,7 +14,7 @@ import {
   updateWallet,
   WalletError,
 } from '@/server/wallet.service';
-import { isMailConfigured, sendInviteEmail } from '@/server/mail';
+import { mailProvider, sendInviteEmail } from '@/server/mail';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -25,6 +25,8 @@ export type ActionState = {
   inviteToken?: string;
   /** null — почта не настроена, письма не шлём вовсе */
   emailSent?: boolean | null;
+  /** Ответ провайдера при неудаче — чтобы не лазить в логи Vercel */
+  emailError?: string;
 };
 
 const ok = (extra?: Partial<ActionState>): ActionState => ({ error: null, ok: true, ...extra });
@@ -121,7 +123,8 @@ export async function inviteAction(_prev: ActionState, formData: FormData): Prom
     // ссылки — надёжный запасной путь.
     return ok({
       inviteToken: invite.token,
-      emailSent: isMailConfigured() ? delivery.sent : null,
+      emailSent: mailProvider() ? delivery.sent : null,
+      emailError: delivery.error,
     });
   } catch (error) {
     return toState(error, 'inviteAction');

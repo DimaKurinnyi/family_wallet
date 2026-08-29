@@ -184,6 +184,11 @@ export const WalletCard: React.FC<{ wallet: WalletView; currentUserId: string }>
                     : inviteState.emailSent === null
                       ? 'Приглашение создано. Отправка писем не настроена — скопируйте ссылку кнопкой выше и передайте человеку.'
                       : 'Приглашение создано, но письмо не ушло. Скопируйте ссылку кнопкой выше и передайте человеку.'}
+                  {inviteState.emailError ? (
+                    <span className="mt-1 block break-all font-mono text-xs text-gray-500">
+                      {inviteState.emailError}
+                    </span>
+                  ) : null}
                 </p>
               ) : null}
             </>
