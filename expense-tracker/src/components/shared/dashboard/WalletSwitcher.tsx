@@ -12,7 +12,8 @@ import {
 import { Settings2, User, Users, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useWalletSwitch } from './WalletSwitchContext';
+
 
 export type WalletOption = { id: string; name: string; type: 'personal' | 'shared' };
 
@@ -23,10 +24,10 @@ interface Props {
 
 export const WalletSwitcher: React.FC<Props> = ({ wallets, activeWalletId }) => {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { isSwitching, startSwitch } = useWalletSwitch();
 
   const handleChange = (walletId: string) => {
-    startTransition(async () => {
+    startSwitch(async () => {
       await selectWalletAction(walletId);
       router.refresh();
     });
@@ -36,7 +37,7 @@ export const WalletSwitcher: React.FC<Props> = ({ wallets, activeWalletId }) => 
   // отличить от подписи. Теперь это всегда кнопка: даже с одним кошельком в
   // списке видно, куда идти за вторым.
   return (
-    <Select value={activeWalletId} onValueChange={handleChange} disabled={isPending}>
+    <Select value={activeWalletId} onValueChange={handleChange} disabled={isSwitching}>
       <SelectTrigger
         aria-label="Выбрать кошелёк"
         className="h-10 w-auto min-w-[170px] max-w-[240px] gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">

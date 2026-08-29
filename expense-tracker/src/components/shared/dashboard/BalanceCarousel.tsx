@@ -3,8 +3,9 @@
 import { selectWalletAction } from '@/app/(root)/dashboard/actions';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BalanceCard } from './BalanceCard';
+import { useWalletSwitch } from './WalletSwitchContext';
 
 export type WalletSummary = {
   id: string;
@@ -26,7 +27,7 @@ interface Props {
 export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const { startSwitch } = useWalletSwitch();
 
   const activeIndex = Math.max(
     0,
@@ -65,7 +66,7 @@ export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) =>
         if (!wallet) return;
 
         settledIndex.current = index;
-        startTransition(async () => {
+        startSwitch(async () => {
           await selectWalletAction(wallet.id);
           router.refresh();
         });
@@ -77,7 +78,7 @@ export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) =>
       clearTimeout(timer);
       scroller.removeEventListener('scroll', onScroll);
     };
-  }, [wallets, router]);
+  }, [wallets, router, startSwitch]);
 
   if (wallets.length === 0) return null;
 
