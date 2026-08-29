@@ -48,7 +48,7 @@ export default async function WalletsPage() {
       walletId={activeWallet?.id ?? null}>
       <Header
         userName={user.name ?? user.email}
-        wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name }))}
+        wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
       />
 

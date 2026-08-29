@@ -1,18 +1,19 @@
 'use client';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, User, Users } from 'lucide-react';
 
 interface Props {
   balance: number;
   income: number;
   expense: number;
   walletName?: string;
+  walletType?: 'personal' | 'shared';
 }
 
 const format = (value: number) =>
   new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 
-export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletName }) => {
+export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletName, walletType }) => {
   const { symbol } = useCurrencyStore();
 
   return (
@@ -22,8 +23,13 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-sm font-semibold opacity-90">Баланс</h2>
         {walletName ? (
-          <div className="text-xs sm:text-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 truncate max-w-[55%]">
-            {walletName}
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 max-w-[60%]">
+            {walletType === 'shared' ? (
+              <Users className="h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <User className="h-3.5 w-3.5 shrink-0" />
+            )}
+            <span className="truncate">{walletName}</span>
           </div>
         ) : null}
       </div>
