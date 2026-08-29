@@ -6,7 +6,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import { CURRENCIES, CURRENCY_META, type Currency } from '@/lib/currency';
 import { useRouter } from 'next/navigation';
@@ -27,9 +26,15 @@ export default function CurrencySwitcher({ currency }: { currency: Currency }) {
 
   return (
     <Select value={currency} onValueChange={handleChange} disabled={isSwitching}>
-      <SelectTrigger aria-label="Валюта показа" className="h-10 w-auto gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">
+      {/* Содержимое триггера задаём сами, без SelectValue: он отрисовывает
+          выбранный пункт целиком, вместе с его иконкой, и рядом с нашей
+          получалось две одинаковых. Заодно в кнопке остаётся только код,
+          а полное название видно в списке. */}
+      <SelectTrigger
+        aria-label="Валюта показа"
+        className="h-10 w-auto gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">
         <span aria-hidden="true">{CURRENCY_META[currency].icon}</span>
-        <SelectValue />
+        <span className="font-medium">{currency}</span>
       </SelectTrigger>
       <SelectContent>
         {CURRENCIES.map((code) => (

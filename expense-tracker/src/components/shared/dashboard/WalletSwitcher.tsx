@@ -7,7 +7,6 @@ import {
   SelectItem,
   SelectSeparator,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import { Settings2, User, Users, Wallet } from 'lucide-react';
 import Link from 'next/link';
@@ -25,6 +24,7 @@ interface Props {
 export const WalletSwitcher: React.FC<Props> = ({ wallets, activeWalletId }) => {
   const router = useRouter();
   const { isSwitching, startSwitch } = useWalletSwitch();
+  const active = wallets.find((wallet) => wallet.id === activeWalletId) ?? wallets[0];
 
   const handleChange = (walletId: string) => {
     startSwitch(async () => {
@@ -40,9 +40,12 @@ export const WalletSwitcher: React.FC<Props> = ({ wallets, activeWalletId }) => 
     <Select value={activeWalletId} onValueChange={handleChange} disabled={isSwitching}>
       <SelectTrigger
         aria-label="Выбрать кошелёк"
-        className="h-10 w-auto min-w-[170px] max-w-[240px] gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">
+        className="h-10 w-auto min-w-[150px] max-w-[240px] gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">
+        {/* Без SelectValue по той же причине, что и в переключателе валют:
+            он подставил бы пункт вместе с его иконкой, и в кнопке оказалось
+            бы две. Значок типа кошелька остаётся в списке. */}
         <Wallet className="h-4 w-4 shrink-0 text-[#8144e9]" />
-        <SelectValue />
+        <span className="truncate">{active?.name}</span>
       </SelectTrigger>
 
       <SelectContent>
