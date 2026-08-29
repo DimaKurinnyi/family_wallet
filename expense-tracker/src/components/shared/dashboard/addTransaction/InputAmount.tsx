@@ -1,6 +1,14 @@
 'use client';
 
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { CURRENCIES, CURRENCY_META, type Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { CategoryOption } from './TransactionAdder';
 
@@ -9,6 +17,8 @@ interface Props {
   value: string;
   onChange: (digits: string) => void;
   selectedCategory: CategoryOption | null;
+  currency: Currency;
+  onCurrencyChange: (currency: Currency) => void;
 }
 
 export const InputAmount: React.FC<Props> = ({
@@ -16,6 +26,8 @@ export const InputAmount: React.FC<Props> = ({
   value,
   onChange,
   selectedCategory,
+  currency,
+  onCurrencyChange,
 }) => {
   const formatted = value ? new Intl.NumberFormat('ru-RU').format(Number(value)) : '';
   const isIncome = transactionType === 'income';
@@ -42,15 +54,29 @@ export const InputAmount: React.FC<Props> = ({
           />
         )}
 
-        <div className="flex items-center">
-          <span className="ml-2 text-2xl font-bold text-gray-500">{isIncome ? '+' : '−'}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-2xl font-bold text-gray-500">{isIncome ? '+' : '−'}</span>
+          <Select value={currency} onValueChange={(value) => onCurrencyChange(value as Currency)}>
+            <SelectTrigger
+              aria-label="Валюта операции"
+              className="h-8 w-auto gap-1 border-0 bg-transparent px-1 text-lg font-bold text-gray-500 shadow-none">
+              <SelectValue>{CURRENCY_META[currency].symbol}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {CURRENCIES.map((code) => (
+                <SelectItem key={code} value={code}>
+                  {CURRENCY_META[code].symbol} {code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <input
             id="amount-display"
             type="text"
             inputMode="numeric"
             value={formatted}
             onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
-            className="w-28 sm:w-32 text-2xl px-1 font-bold bg-transparent border-0 focus:outline-none"
+            className="w-24 sm:w-28 text-2xl px-1 font-bold bg-transparent border-0 focus:outline-none"
             placeholder="0"
             aria-label="Сумма"
           />

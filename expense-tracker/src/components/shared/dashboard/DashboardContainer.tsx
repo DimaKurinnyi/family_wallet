@@ -2,18 +2,21 @@ import React from "react";
 import { MobileNav } from "./MobileNav";
 import { SideBar } from "./SideBar";
 import { WalletSwitchProvider } from "./WalletSwitchContext";
+import type { Currency } from "@/lib/currency";
 import type { CategoryOption } from "./addTransaction/TransactionAdder";
 
 interface Props {
   children?: React.ReactNode;
   categories: CategoryOption[];
   walletId: string | null;
+  currency: Currency;
 }
 
 export const DashboardContainer: React.FC<Props> = ({
   children,
   categories,
   walletId,
+  currency,
 }) => {
   return (
     <WalletSwitchProvider>
@@ -30,11 +33,11 @@ export const DashboardContainer: React.FC<Props> = ({
 
           {/* Десктоп: панель выезжает справа по наведению */}
           <div className="hidden md:block absolute -right-27 top-1/2 -translate-y-1/2 hover:right-0 transition-all duration-300">
-            <SideBar categories={categories} walletId={walletId} />
+            <SideBar categories={categories} walletId={walletId} currency={currency} />
           </div>
         </div>
 
-        <MobileNav categories={categories} walletId={walletId} />
+        <MobileNav categories={categories} walletId={walletId} currency={currency} />
       </div>
     </WalletSwitchProvider>
   );

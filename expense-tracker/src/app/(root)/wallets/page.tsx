@@ -2,6 +2,7 @@ import { CreateWalletForm } from '@/components/shared/wallets/CreateWalletForm';
 import { WalletCard, type WalletView } from '@/components/shared/wallets/WalletCard';
 import { DashboardContainer, Header } from '@/components/shared';
 import { resolveActiveWallet } from '@/server/activeWallet';
+import { getDisplayCurrency } from '@/server/displayCurrency';
 import { getCategoriesForUser } from '@/server/dashboard.service';
 import { getCurrentUser } from '@/server/session';
 import { getUserWallets, getWalletWithPeople } from '@/server/wallet.service';
@@ -12,9 +13,10 @@ export const metadata: Metadata = { title: 'Кошельки — Expense Tracker
 export default async function WalletsPage() {
   const user = await getCurrentUser();
 
-  const [wallets, categories] = await Promise.all([
+  const [wallets, categories, currency] = await Promise.all([
     getUserWallets(user.id),
     getCategoriesForUser(user.id),
+    getDisplayCurrency(),
   ]);
 
   const activeWallet = await resolveActiveWallet(wallets);
@@ -45,11 +47,13 @@ export default async function WalletsPage() {
         iconName: category.icon?.name ?? null,
         flow: category.flow,
       }))}
-      walletId={activeWallet?.id ?? null}>
+      walletId={activeWallet?.id ?? null}
+      currency={currency}>
       <Header
         userName={user.name ?? user.email}
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
+        currency={currency}
       />
 
       <div className="mt-8 flex flex-col gap-4 max-w-[640px] mx-auto">

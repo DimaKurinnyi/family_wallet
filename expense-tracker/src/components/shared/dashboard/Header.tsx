@@ -1,3 +1,4 @@
+import type { Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,9 +11,10 @@ interface Props {
   userName?: string | null;
   wallets: WalletOption[];
   activeWalletId: string;
+  currency: Currency;
 }
 
-export const Header: React.FC<Props> = ({ className, userName, wallets, activeWalletId }) => {
+export const Header: React.FC<Props> = ({ className, userName, wallets, activeWalletId, currency }) => {
   return (
     <div className={cn('flex flex-col gap-4 md:flex-row md:items-center md:justify-between', className)}>
       <Link href="/">
@@ -31,7 +33,7 @@ export const Header: React.FC<Props> = ({ className, userName, wallets, activeWa
 
       <div className="flex flex-wrap items-center gap-3 md:gap-4">
         <WalletSwitcher wallets={wallets} activeWalletId={activeWalletId} />
-        <CurrencySwitcher />
+        <CurrencySwitcher currency={currency} />
         <p className="text-sm hidden sm:block">С возвращением, {userName ?? 'друг'}</p>
         <LogOutButton />
       </div>

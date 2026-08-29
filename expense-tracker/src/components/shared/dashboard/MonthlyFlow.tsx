@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useCurrencyStore } from "@/store/useCurrencyStore";
+import { CURRENCY_META, type Currency } from "@/lib/currency";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useWalletSwitch } from "./WalletSwitchContext";
 import { useState } from "react";
@@ -17,6 +17,7 @@ export type MonthPoint = {
 interface Props {
   months: MonthPoint[];
   className?: string;
+  currency: Currency;
 }
 
 // Два ряда данных, поэтому цвета проверены валидатором палитры на
@@ -36,8 +37,8 @@ const money = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value);
 
-export const MonthlyFlow: React.FC<Props> = ({ months, className }) => {
-  const { symbol } = useCurrencyStore();
+export const MonthlyFlow: React.FC<Props> = ({ months, className, currency }) => {
+  const symbol = CURRENCY_META[currency].symbol;
   const [hovered, setHovered] = useState<string | null>(null);
   const { isSwitching } = useWalletSwitch();
 

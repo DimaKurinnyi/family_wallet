@@ -1,18 +1,20 @@
 import Link from 'next/link';
 import { AddWindow } from './addTransaction/AddWindow';
+import type { Currency } from '@/lib/currency';
 import type { CategoryOption } from './addTransaction/TransactionAdder';
 import { NAV_ITEMS } from './navItems';
 
 interface Props {
   categories: CategoryOption[];
   walletId: string | null;
+  currency: Currency;
 }
 
 const [dashboard, expenses, wallets, more] = NAV_ITEMS;
 
 // Боковая панель только для десктопа: она выезжает по наведению,
 // а на сенсорных экранах наведения нет. Там работает MobileNav.
-export const SideBar: React.FC<Props> = ({ categories, walletId }) => {
+export const SideBar: React.FC<Props> = ({ categories, walletId, currency }) => {
   const renderLink = ({ href, label, icon: Icon }: (typeof NAV_ITEMS)[number]) => (
     <Link key={href} href={href} className="p-2 rounded-md hover:bg-[#e094c8]">
       <Icon />
@@ -29,6 +31,7 @@ export const SideBar: React.FC<Props> = ({ categories, walletId }) => {
       <AddWindow
         categories={categories}
         walletId={walletId}
+        defaultCurrency={currency}
         triggerClassName="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
       />
 

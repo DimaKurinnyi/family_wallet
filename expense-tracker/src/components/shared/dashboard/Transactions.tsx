@@ -1,7 +1,7 @@
 "use client";
 import { CategoryIcon } from "@/components/shared/CategoryIcon";
 import { cn } from "@/lib/utils";
-import { useCurrencyStore } from "@/store/useCurrencyStore";
+import { CURRENCY_META, type Currency } from "@/lib/currency";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { useWalletSwitch } from "./WalletSwitchContext";
 
@@ -11,8 +11,11 @@ export type TransactionView = {
   id: string;
   categoryName: string;
   iconName: string | null;
-  amount: number;
+  /** null — курса нет, показываем исходную сумму как есть */
+  amount: number | null;
   type: "income" | "expense";
+  /** Исходная сумма, если операция введена в другой валюте */
+  original: { amount: number; currency: string } | null;
   dateLabel: string;
   comment: string | null;
   // Заполняется только для общего кошелька: в личном автор всегда один
@@ -24,6 +27,7 @@ interface Props {
   transactions: TransactionView[];
   className?: string;
   title?: string;
+  currency: Currency;
 }
 
 const format = (value: number) =>
@@ -36,8 +40,9 @@ export const Transactions: React.FC<Props> = ({
   transactions,
   className,
   title,
+  currency,
 }) => {
-  const { symbol } = useCurrencyStore();
+  const symbol = CURRENCY_META[currency].symbol;
   const { isSwitching } = useWalletSwitch();
 
   return (
@@ -71,6 +76,9 @@ export const Transactions: React.FC<Props> = ({
                       {transaction.categoryName}
                     </p>
                     <p className="text-sm text-gray-400">
+                      {transaction.original && transaction.amount !== null
+                        ? `${format(transaction.original.amount)} ${transaction.original.currency} · `
+                        : ""}
                       {transaction.authorName
                         ? `${transaction.authorName} · `
                         : ""}
@@ -88,8 +96,9 @@ export const Transactions: React.FC<Props> = ({
                   )}
                 >
                   {transaction.type === "income" ? "+" : "−"}
-                  {symbol}
-                  {format(transaction.amount)}
+                  {transaction.amount === null
+                    ? `${format(transaction.original?.amount ?? 0)} ${transaction.original?.currency ?? ""}`
+                    : `${symbol}${format(transaction.amount)}`}
                 </p>
               </div>
             ))}

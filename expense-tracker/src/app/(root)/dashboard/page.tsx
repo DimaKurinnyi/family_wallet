@@ -1,7 +1,10 @@
 import { DashboardContainer, DashboardContent, Header, MonthlyFlow, Transactions } from '@/components/shared';
 import type { MonthPoint } from '@/components/shared/dashboard/MonthlyFlow';
 import type { TransactionView } from '@/components/shared/dashboard/Transactions';
+import { convert, convertTotals, type Rates } from '@/lib/currency';
 import { resolveActiveWallet } from '@/server/activeWallet';
+import { getDisplayCurrency } from '@/server/displayCurrency';
+import { getRates } from '@/server/rates.service';
 import {
   getCategoriesForUser,
   getMonthlyTotals,
@@ -26,10 +29,16 @@ const monthFull = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numer
 export default async function Dashboard() {
   const user = await getCurrentUser();
 
-  const [wallets, categories] = await Promise.all([
+  const [wallets, categories, currency, ratesResult] = await Promise.all([
     getUserWallets(user.id),
     getCategoriesForUser(user.id),
+    getDisplayCurrency(),
+    getRates(),
   ]);
+
+  // Курсов нет вовсе — пересчитать нечем. Единичные курсы оставляют суммы
+  // как есть, а предупреждение внизу говорит, что своду верить нельзя.
+  const rates: Rates = ratesResult?.rates ?? {};
 
   const activeWallet = await resolveActiveWallet(wallets);
 
@@ -39,12 +48,19 @@ export default async function Dashboard() {
     activeWallet ? getMonthlyTotals(activeWallet.id) : [],
   ]);
 
-  const walletSummaries = wallets.map((wallet) => ({
-    id: wallet.id,
-    name: wallet.name,
-    type: wallet.type,
-    ...(summaries.get(wallet.id) ?? { income: 0, expense: 0, balance: 0 }),
-  }));
+  const walletSummaries = wallets.map((wallet) => {
+    const totals = summaries.get(wallet.id) ?? { income: {}, expense: {} };
+    const income = convertTotals(totals.income, currency, rates);
+    const expense = convertTotals(totals.expense, currency, rates);
+    return {
+      id: wallet.id,
+      name: wallet.name,
+      type: wallet.type,
+      income,
+      expense,
+      balance: income === null || expense === null ? null : income - expense,
+    };
+  });
 
   const isShared = activeWallet?.type === 'shared';
 
@@ -52,7 +68,13 @@ export default async function Dashboard() {
     id: transaction.id,
     categoryName: transaction.category?.name ?? 'Без категории',
     iconName: transaction.category?.icon?.name ?? null,
-    amount: transaction.amount,
+    amount: convert(transaction.amount, transaction.currency, currency, rates),
+    // Показываем исходную сумму, если операция введена в другой валюте:
+    // иначе пересчёт молча подменяет то, что человек записал.
+    original:
+      transaction.currency === currency
+        ? null
+        : { amount: transaction.amount, currency: transaction.currency },
     type: transaction.type,
     dateLabel: dateFormatter.format(transaction.createdAt),
     comment: transaction.comment,
@@ -63,8 +85,8 @@ export default async function Dashboard() {
     key: month.key,
     label: monthShort.format(month.date).replace('.', ''),
     fullLabel: monthFull.format(month.date),
-    income: month.income,
-    expense: month.expense,
+    income: convertTotals(month.income, currency, rates) ?? 0,
+    expense: convertTotals(month.expense, currency, rates) ?? 0,
   }));
 
   const categoryOptions = categories.map((category) => ({
@@ -75,18 +97,43 @@ export default async function Dashboard() {
   }));
 
   return (
-    <DashboardContainer categories={categoryOptions} walletId={activeWallet?.id ?? null}>
+    <DashboardContainer categories={categoryOptions} walletId={activeWallet?.id ?? null}
+      currency={currency}>
       <Header
         userName={user.name ?? user.email}
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
+        currency={currency}
       />
       <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
-        <DashboardContent wallets={walletSummaries} activeWalletId={activeWallet?.id ?? ''} />
+        <DashboardContent
+          wallets={walletSummaries}
+          activeWalletId={activeWallet?.id ?? ''}
+          currency={currency}
+        />
       </div>
-      <MonthlyFlow months={monthPoints} className="mt-8 w-full max-w-[600px] mx-auto" />
+      {ratesResult ? (
+        <MonthlyFlow months={monthPoints} currency={currency} className="mt-8 w-full max-w-[600px] mx-auto" />
+      ) : (
+        <p className="mx-auto mt-8 max-w-[600px] rounded-2xl border border-gray-100 bg-white p-6 text-center text-gray-500">
+          График скрыт: без курсов валют суммы за месяц не сложить.
+        </p>
+      )}
 
-      <Transactions className="max-w-[600px] mx-auto" title="Операции" transactions={transactionViews} />
+      <Transactions
+        className="max-w-[600px] mx-auto"
+        title="Операции"
+        transactions={transactionViews}
+        currency={currency}
+      />
+
+      {!ratesResult || ratesResult.stale ? (
+        <p className="mx-auto mt-6 max-w-[600px] text-center text-sm text-amber-700">
+          {ratesResult
+            ? `Курсы валют недоступны, показаны сохранённые от ${ratesResult.updatedAt.toLocaleDateString('ru-RU')}.`
+            : 'Курсы валют недоступны — суммы в разных валютах показаны без пересчёта.'}
+        </p>
+      ) : null}
     </DashboardContainer>
   );
 }

@@ -102,6 +102,9 @@ model Transaction {
   id         String          @id @default(cuid())
   type       TransactionType
   amount     Float
+  // Валюта, в которой операцию ввели. Пересчёт делается при показе по
+  // текущему курсу, а исходная сумма остаётся неизменной.
+  currency   String          @default("USD")
   comment    String?
   categoryId String?
   category   Category?       @relation(fields: [categoryId], references: [id])
@@ -110,6 +113,17 @@ model Transaction {
   userId     String // кто совершил транзакцию
   user       User            @relation(fields: [userId], references: [id])
   createdAt  DateTime        @default(now())
+}
+
+// Последние известные курсы к доллару. Нужны как запас: если внешний
+// сервис недоступен, показываем сохранённые и честно пишем их дату.
+model ExchangeRate {
+  base      String
+  currency  String
+  rate      Float
+  updatedAt DateTime @updatedAt
+
+  @@id([base, currency])
 }
 
 model Account {

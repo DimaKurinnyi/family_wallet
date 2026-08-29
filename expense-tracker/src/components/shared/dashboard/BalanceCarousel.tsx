@@ -1,6 +1,7 @@
 'use client';
 
 import { selectWalletAction } from '@/app/(root)/dashboard/actions';
+import type { Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -11,20 +12,21 @@ export type WalletSummary = {
   id: string;
   name: string;
   type: 'personal' | 'shared';
-  balance: number;
-  income: number;
-  expense: number;
+  balance: number | null;
+  income: number | null;
+  expense: number | null;
 };
 
 interface Props {
   wallets: WalletSummary[];
   activeWalletId: string;
+  currency: Currency;
 }
 
 // Карусель кошельков для телефона: листается свайпом, как карты в банковском
 // приложении. На десктопе не показывается — там есть переключатель в шапке,
 // а мышью такое листать неудобно.
-export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) => {
+export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId, currency }) => {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { startSwitch } = useWalletSwitch();
@@ -102,6 +104,7 @@ export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) =>
               expense={wallet.expense}
               walletName={wallet.name}
               walletType={wallet.type}
+              currency={currency}
             />
           </div>
         ))}

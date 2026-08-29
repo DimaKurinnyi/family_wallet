@@ -1,7 +1,9 @@
 'use server';
 
 import prisma from '@/lib/prisma';
+import { isCurrency } from '@/lib/currency';
 import { ACTIVE_WALLET_COOKIE } from '@/server/activeWallet';
+import { DISPLAY_CURRENCY_COOKIE } from '@/server/displayCurrency';
 import { requireUserId } from '@/server/session';
 import { createTransactionSchema } from '@/server/validation/transaction.schema';
 import { cookies } from 'next/headers';
@@ -21,6 +23,7 @@ export async function createTransactionAction(
       categoryId: formData.get('categoryId'),
       type: formData.get('type'),
       amount: formData.get('amount'),
+      currency: formData.get('currency'),
       comment: formData.get('comment') || undefined,
     });
 
@@ -28,7 +31,7 @@ export async function createTransactionAction(
       return { error: parsed.error.issues[0]?.message ?? 'Проверьте данные', ok: false };
     }
 
-    const { walletId, categoryId, type, amount, comment } = parsed.data;
+    const { walletId, categoryId, type, amount, currency, comment } = parsed.data;
 
     // Кошелёк и категория проверяются на принадлежность пользователю:
     // id приходят из формы, то есть от клиента, и доверять им нельзя.
@@ -47,7 +50,7 @@ export async function createTransactionAction(
     }
 
     await prisma.transaction.create({
-      data: { walletId, categoryId, type, amount, comment, userId },
+      data: { walletId, categoryId, type, amount, currency, comment, userId },
     });
 
     revalidatePath('/dashboard');
@@ -78,4 +81,23 @@ export async function selectWalletAction(walletId: string) {
   });
 
   revalidatePath('/dashboard');
+}
+
+export async function selectCurrencyAction(currency: string) {
+  await requireUserId();
+
+  if (!isCurrency(currency)) {
+    return;
+  }
+
+  (await cookies()).set(DISPLAY_CURRENCY_COOKIE, currency, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+  });
+
+  revalidatePath('/dashboard');
+  revalidatePath('/wallets');
 }

@@ -1,20 +1,24 @@
 'use client';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { CURRENCY_META, type Currency } from '@/lib/currency';
 import { ArrowDown, ArrowUp, User, Users } from 'lucide-react';
 
 interface Props {
-  balance: number;
-  income: number;
-  expense: number;
+  /** null — курсов нет, свести валюты в одно число нечем */
+  balance: number | null;
+  income: number | null;
+  expense: number | null;
   walletName?: string;
   walletType?: 'personal' | 'shared';
+  currency: Currency;
 }
 
-const format = (value: number) =>
-  new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+const format = (value: number | null) =>
+  value === null
+    ? '—'
+    : new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 
-export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletName, walletType }) => {
-  const { symbol } = useCurrencyStore();
+export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletName, walletType, currency }) => {
+  const symbol = CURRENCY_META[currency].symbol;
 
   return (
     // Пропорции банковской карты — 85.6×54 мм. Высота считается от ширины,
@@ -35,7 +39,7 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
       </div>
 
       <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">
-        {symbol}
+        {balance === null ? '' : symbol}
         {format(balance)}
       </h2>
 
@@ -48,7 +52,7 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
             <p className="opacity-90 text-sm">Доходы</p>
           </div>
           <h2 className="mt-1 font-semibold tabular-nums truncate">
-            {symbol}
+            {income === null ? '' : symbol}
             {format(income)}
           </h2>
         </div>
@@ -60,7 +64,7 @@ export const BalanceCard: React.FC<Props> = ({ balance, income, expense, walletN
             <p className="opacity-90 text-sm">Расходы</p>
           </div>
           <h2 className="mt-1 font-semibold tabular-nums truncate">
-            {symbol}
+            {expense === null ? '' : symbol}
             {format(expense)}
           </h2>
         </div>

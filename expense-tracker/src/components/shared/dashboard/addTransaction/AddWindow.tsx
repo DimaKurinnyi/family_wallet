@@ -11,6 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import type { Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { BanknoteArrowUp, Plus } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
@@ -23,14 +24,17 @@ interface Props {
   categories: CategoryOption[];
   walletId: string | null;
   triggerClassName?: string;
+  /** Валюта показа: по умолчанию вводим в ней же, менять можно тут же */
+  defaultCurrency: Currency;
 }
 
-export function AddWindow({ categories, walletId, triggerClassName }: Props) {
+export function AddWindow({ categories, walletId, triggerClassName, defaultCurrency }: Props) {
   // Расход выбран сразу: подавляющее большинство операций — траты,
   // и лишний клик перед вводом суммы не нужен.
   const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState<Currency>(defaultCurrency);
   const [open, setOpen] = useState(false);
 
   const [state, formAction, isPending] = useActionState(createTransactionAction, initialState);
@@ -39,6 +43,7 @@ export function AddWindow({ categories, walletId, triggerClassName }: Props) {
     setTransactionType('expense');
     setCategoryId(null);
     setAmount('');
+    setCurrency(defaultCurrency);
   };
 
   useEffect(() => {
@@ -84,6 +89,7 @@ export function AddWindow({ categories, walletId, triggerClassName }: Props) {
           <input type="hidden" name="type" value={transactionType} />
           <input type="hidden" name="categoryId" value={categoryId ?? ''} />
           <input type="hidden" name="amount" value={amount} />
+          <input type="hidden" name="currency" value={currency} />
 
           <div className="shrink-0 flex items-center justify-between gap-2 px-3 pt-3">
             <button
@@ -129,6 +135,8 @@ export function AddWindow({ categories, walletId, triggerClassName }: Props) {
               value={amount}
               onChange={setAmount}
               selectedCategory={selectedCategory}
+              currency={currency}
+              onCurrencyChange={setCurrency}
             />
             <Input name="comment" placeholder="Комментарий (необязательно)" className="mt-3" />
 

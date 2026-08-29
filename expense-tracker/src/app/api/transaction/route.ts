@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { walletId, amount, categoryId, comment, type } = parsed.data;
+    const { walletId, amount, currency, categoryId, comment, type } = parsed.data;
 
     const wallet = await prisma.wallet.findFirst({
       where: { id: walletId, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
         categoryId,
         type,
         amount,
+        currency,
         comment,
         userId,
       },

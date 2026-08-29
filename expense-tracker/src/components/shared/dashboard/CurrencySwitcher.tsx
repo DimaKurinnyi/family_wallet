@@ -1,37 +1,46 @@
-"use client";
-import type { Currency } from "@/store/useCurrencyStore";
-import { useCurrencyStore } from "@/store/useCurrencyStore";
+'use client';
 
-export default function CurrencySwitcher() {
-  const { currency, setCurrency, icon } = useCurrencyStore();
+import { selectCurrencyAction } from '@/app/(root)/dashboard/actions';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { CURRENCIES, CURRENCY_META, type Currency } from '@/lib/currency';
+import { useRouter } from 'next/navigation';
+import { useWalletSwitch } from './WalletSwitchContext';
 
-  type CurrencyOption = {
-    code: Currency;
-    name: string;
-    icon: string;
+// Валюта показа приходит с сервера: пересчёт делается там же, поэтому
+// хранить её в localStorage нельзя — сервер бы о ней не знал.
+export default function CurrencySwitcher({ currency }: { currency: Currency }) {
+  const router = useRouter();
+  const { isSwitching, startSwitch } = useWalletSwitch();
+
+  const handleChange = (next: string) => {
+    startSwitch(async () => {
+      await selectCurrencyAction(next);
+      router.refresh();
+    });
   };
 
-  const currencies: CurrencyOption[] = [
-    { code: "USD", name: "Dollar", icon: "💵" },
-    { code: "EUR", name: "Euro", icon: "💶" },
-    { code: "UAH", name: "Hryvnia", icon: "🇺🇦" },
-    { code: "PLN", name: "Zloty", icon: "🇵🇱" },
-  ];
-
   return (
-    <div className="flex items-center gap-2">
-      <span>{icon}</span>
-      <select
-        value={currency}
-        onChange={(e) => setCurrency(e.target.value as Currency)}
-        className="border rounded-md px-2 py-1 text-sm bg-transparent"
-      >
-        {currencies.map((c) => (
-          <option key={c.code} value={c.code}>
-             {c.code}
-          </option>
+    <Select value={currency} onValueChange={handleChange} disabled={isSwitching}>
+      <SelectTrigger aria-label="Валюта показа" className="h-10 w-auto gap-2 rounded-full border-gray-200 bg-white px-3 shadow-sm">
+        <span aria-hidden="true">{CURRENCY_META[currency].icon}</span>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {CURRENCIES.map((code) => (
+          <SelectItem key={code} value={code}>
+            <span className="flex items-center gap-2">
+              <span aria-hidden="true">{CURRENCY_META[code].icon}</span>
+              {code} · {CURRENCY_META[code].label}
+            </span>
+          </SelectItem>
         ))}
-      </select>
-    </div>
+      </SelectContent>
+    </Select>
   );
 }

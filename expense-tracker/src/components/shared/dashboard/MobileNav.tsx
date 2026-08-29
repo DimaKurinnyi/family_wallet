@@ -1,18 +1,20 @@
 import Link from 'next/link';
 import { AddWindow } from './addTransaction/AddWindow';
+import type { Currency } from '@/lib/currency';
 import type { CategoryOption } from './addTransaction/TransactionAdder';
 import { NAV_ITEMS } from './navItems';
 
 interface Props {
   categories: CategoryOption[];
   walletId: string | null;
+  currency: Currency;
 }
 
 const [dashboard, expenses, wallets, more] = NAV_ITEMS;
 
 // Нижняя панель для телефона: боковая выезжает по наведению, которого
 // на сенсорном экране не бывает.
-export const MobileNav: React.FC<Props> = ({ categories, walletId }) => {
+export const MobileNav: React.FC<Props> = ({ categories, walletId, currency }) => {
   const renderLink = ({ href, label, icon: Icon }: (typeof NAV_ITEMS)[number]) => (
     <Link
       key={href}
@@ -27,7 +29,7 @@ export const MobileNav: React.FC<Props> = ({ categories, walletId }) => {
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/20 bg-[rgba(20,88,224,0.92)] backdrop-blur-md">
       <div className="flex items-end justify-around px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {[dashboard, expenses].map(renderLink)}
-        <AddWindow categories={categories} walletId={walletId} triggerClassName="-mt-8 shrink-0" />
+        <AddWindow categories={categories} walletId={walletId} defaultCurrency={currency} triggerClassName="-mt-8 shrink-0" />
         {[wallets, more].map(renderLink)}
       </div>
     </nav>
