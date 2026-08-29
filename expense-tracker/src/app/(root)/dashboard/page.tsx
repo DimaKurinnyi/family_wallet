@@ -1,8 +1,10 @@
-import { DashboardContainer, DashboardContent, Header, Transactions } from '@/components/shared';
+import { DashboardContainer, DashboardContent, Header, MonthlyExpenses, Transactions } from '@/components/shared';
+import type { MonthPoint } from '@/components/shared/dashboard/MonthlyExpenses';
 import type { TransactionView } from '@/components/shared/dashboard/Transactions';
 import { resolveActiveWallet } from '@/server/activeWallet';
 import {
   getCategoriesForUser,
+  getMonthlyExpenses,
   getWalletSummaries,
   getWalletTransactions,
 } from '@/server/dashboard.service';
@@ -18,6 +20,9 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   minute: '2-digit',
 });
 
+const monthShort = new Intl.DateTimeFormat('ru-RU', { month: 'short', timeZone: 'UTC' });
+const monthFull = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
 export default async function Dashboard() {
   const user = await getCurrentUser();
 
@@ -28,9 +33,10 @@ export default async function Dashboard() {
 
   const activeWallet = await resolveActiveWallet(wallets);
 
-  const [summaries, transactions] = await Promise.all([
+  const [summaries, transactions, monthlyExpenses] = await Promise.all([
     getWalletSummaries(wallets.map((wallet) => wallet.id)),
     activeWallet ? getWalletTransactions(activeWallet.id) : [],
+    activeWallet ? getMonthlyExpenses(activeWallet.id) : [],
   ]);
 
   const walletSummaries = wallets.map((wallet) => ({
@@ -53,6 +59,13 @@ export default async function Dashboard() {
     authorName: isShared ? transaction.user.name?.trim() || transaction.user.email : null,
   }));
 
+  const monthPoints: MonthPoint[] = monthlyExpenses.map((month) => ({
+    key: month.key,
+    label: monthShort.format(month.date).replace('.', ''),
+    fullLabel: monthFull.format(month.date),
+    total: month.total,
+  }));
+
   const categoryOptions = categories.map((category) => ({
     id: category.id,
     name: category.name,
@@ -70,7 +83,9 @@ export default async function Dashboard() {
       <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
         <DashboardContent wallets={walletSummaries} activeWalletId={activeWallet?.id ?? ''} />
       </div>
-      <Transactions className="max-w-[600px]" title="Операции" transactions={transactionViews} />
+      <MonthlyExpenses months={monthPoints} className="mt-8 w-full max-w-[600px] mx-auto" />
+
+      <Transactions className="max-w-[600px] mx-auto" title="Операции" transactions={transactionViews} />
     </DashboardContainer>
   );
 }

@@ -4,5 +4,6 @@ export { BalanceCard } from './BalanceCard';
 export { BalanceCarousel } from './BalanceCarousel';
 export { DashboardContent } from './DashboardContent';
 export { LogOutButton } from './LogUotButton';
+export { MonthlyExpenses } from './MonthlyExpenses';
 export { Transactions } from './Transactions';
 export { WalletSwitcher } from './WalletSwitcher';
