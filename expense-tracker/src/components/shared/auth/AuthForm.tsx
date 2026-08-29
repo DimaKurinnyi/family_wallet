@@ -33,9 +33,11 @@ const copy = {
 interface Props {
   mode: 'login' | 'register';
   next?: string;
+  /** Подставляется, когда человек пришёл по приглашению: оно привязано к адресу */
+  email?: string;
 }
 
-export const AuthForm: React.FC<Props> = ({ mode, next }) => {
+export const AuthForm: React.FC<Props> = ({ mode, next, email }) => {
   const [state, formAction, isPending] = useActionState(
     mode === 'login' ? loginAction : registerAction,
     initialState
@@ -66,6 +68,7 @@ export const AuthForm: React.FC<Props> = ({ mode, next }) => {
             required
             autoComplete="email"
             placeholder="you@example.com"
+            defaultValue={email}
           />
         </div>
 

@@ -174,9 +174,16 @@ export const WalletCard: React.FC<{ wallet: WalletView; currentUserId: string }>
               </form>
 
               {inviteState.ok && inviteState.inviteToken ? (
-                <p className="mt-2 text-sm text-green-700">
-                  Приглашение создано. Скопируйте ссылку кнопкой выше и отправьте человеку —
-                  письма мы пока не шлём.
+                <p
+                  className={cn(
+                    'mt-2 text-sm',
+                    inviteState.emailSent ? 'text-green-700' : 'text-amber-700'
+                  )}>
+                  {inviteState.emailSent === true
+                    ? 'Письмо со ссылкой отправлено. Ссылку можно ещё и скопировать кнопкой выше.'
+                    : inviteState.emailSent === null
+                      ? 'Приглашение создано. Отправка писем не настроена — скопируйте ссылку кнопкой выше и передайте человеку.'
+                      : 'Приглашение создано, но письмо не ушло. Скопируйте ссылку кнопкой выше и передайте человеку.'}
                 </p>
               ) : null}
             </>

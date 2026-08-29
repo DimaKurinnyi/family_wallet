@@ -6,8 +6,8 @@ export const metadata: Metadata = { title: 'Регистрация — Expense T
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; email?: string }>;
 }) {
-  const { next } = await searchParams;
-  return <AuthForm mode="register" next={next} />;
+  const { next, email } = await searchParams;
+  return <AuthForm mode="register" next={next} email={email} />;
 }
