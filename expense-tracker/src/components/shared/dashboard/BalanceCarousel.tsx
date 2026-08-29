@@ -85,11 +85,16 @@ export const BalanceCarousel: React.FC<Props> = ({ wallets, activeWalletId }) =>
     <div className="md:hidden">
       <div
         ref={scrollerRef}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        // Отрицательные поля гасят внутренние отступы: они нужны только для
+        // того, чтобы тень карточки помещалась внутри области прокрутки.
+        // Контейнер прокрутки режет по обеим осям — overflow-y сам становится
+        // auto, стоит задать overflow-x, — и без запаса тень обрубалась по
+        // прямой линии снизу и справа.
+        className="-mx-3 -my-8 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="group"
         aria-label="Кошельки, листайте вбок">
         {wallets.map((wallet) => (
-          <div key={wallet.id} className="w-full shrink-0 snap-center px-0.5">
+          <div key={wallet.id} className="w-full shrink-0 snap-center px-3 py-8">
             <BalanceCard
               balance={wallet.balance}
               income={wallet.income}
