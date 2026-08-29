@@ -1,7 +1,7 @@
 import { DashboardContainer, DashboardContent, Header, MonthlyFlow, Transactions } from '@/components/shared';
 import type { MonthPoint } from '@/components/shared/dashboard/MonthlyFlow';
 import type { TransactionView } from '@/components/shared/dashboard/Transactions';
-import { convert, convertTotals, type Rates } from '@/lib/currency';
+import { convert, convertTotals, isCurrency, type Rates } from '@/lib/currency';
 import { resolveActiveWallet } from '@/server/activeWallet';
 import { getDisplayCurrency } from '@/server/displayCurrency';
 import { getRates } from '@/server/rates.service';
@@ -64,9 +64,14 @@ export default async function Dashboard() {
 
   const isShared = activeWallet?.type === 'shared';
 
+  // Править и удалять может владелец кошелька или тот, кто внёс запись —
+  // те же правила, что и на сервере. Остальным кнопки просто не показываем.
+  const isWalletOwner = activeWallet?.ownerId === user.id;
+
   const transactionViews: TransactionView[] = transactions.map((transaction) => ({
     id: transaction.id,
     categoryName: transaction.category?.name ?? 'Без категории',
+    categoryId: transaction.categoryId,
     iconName: transaction.category?.icon?.name ?? null,
     amount: convert(transaction.amount, transaction.currency, currency, rates),
     // Показываем исходную сумму, если операция введена в другой валюте:
@@ -76,9 +81,12 @@ export default async function Dashboard() {
         ? null
         : { amount: transaction.amount, currency: transaction.currency },
     type: transaction.type,
+    rawAmount: transaction.amount,
+    rawCurrency: isCurrency(transaction.currency) ? transaction.currency : currency,
     dateLabel: dateFormatter.format(transaction.createdAt),
     comment: transaction.comment,
     authorName: isShared ? transaction.user.name?.trim() || transaction.user.email : null,
+    canEdit: isWalletOwner || transaction.userId === user.id,
   }));
 
   const monthPoints: MonthPoint[] = monthlyTotals.map((month) => ({
@@ -124,6 +132,7 @@ export default async function Dashboard() {
         className="max-w-[600px] mx-auto"
         title="Операции"
         transactions={transactionViews}
+        categories={categoryOptions}
         currency={currency}
       />
 

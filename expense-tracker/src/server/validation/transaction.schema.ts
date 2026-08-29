@@ -13,3 +13,12 @@ export const createTransactionSchema = z.object({
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+
+// Тип операции здесь отсутствует намеренно: доход нельзя превратить в
+// расход правкой — это другая запись по смыслу.
+export const updateTransactionSchema = createTransactionSchema.omit({
+  walletId: true,
+  type: true,
+});
+
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;

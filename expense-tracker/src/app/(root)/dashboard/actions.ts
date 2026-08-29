@@ -5,7 +5,8 @@ import { isCurrency } from '@/lib/currency';
 import { ACTIVE_WALLET_COOKIE } from '@/server/activeWallet';
 import { DISPLAY_CURRENCY_COOKIE } from '@/server/displayCurrency';
 import { requireUserId } from '@/server/session';
-import { createTransactionSchema } from '@/server/validation/transaction.schema';
+import { deleteTransaction, TransactionError, updateTransaction } from '@/server/transaction.service';
+import { createTransactionSchema, updateTransactionSchema } from '@/server/validation/transaction.schema';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
@@ -100,4 +101,53 @@ export async function selectCurrencyAction(currency: string) {
 
   revalidatePath('/dashboard');
   revalidatePath('/wallets');
+}
+
+export async function updateTransactionAction(
+  _prev: TransactionFormState,
+  formData: FormData
+): Promise<TransactionFormState> {
+  try {
+    const userId = await requireUserId();
+
+    const parsed = updateTransactionSchema.safeParse({
+      categoryId: formData.get('categoryId'),
+      amount: formData.get('amount'),
+      currency: formData.get('currency'),
+      comment: formData.get('comment') || undefined,
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? 'Проверьте данные', ok: false };
+    }
+
+    await updateTransaction(userId, String(formData.get('transactionId') ?? ''), parsed.data);
+
+    revalidatePath('/dashboard');
+    return { error: null, ok: true };
+  } catch (error) {
+    if (error instanceof TransactionError) {
+      return { error: error.message, ok: false };
+    }
+    console.error('Error in updateTransactionAction:', error);
+    return { error: 'Не удалось сохранить изменения', ok: false };
+  }
+}
+
+export async function deleteTransactionAction(
+  _prev: TransactionFormState,
+  formData: FormData
+): Promise<TransactionFormState> {
+  try {
+    const userId = await requireUserId();
+    await deleteTransaction(userId, String(formData.get('transactionId') ?? ''));
+    revalidatePath('/dashboard');
+    return { error: null, ok: true };
+  } catch (error) {
+    if (error instanceof TransactionError) {
+      return { error: error.message, ok: false };
+    }
+    console.error('Error in deleteTransactionAction:', error);
+    return { error: 'Не удалось удалить операцию', ok: false };
+  }
 }

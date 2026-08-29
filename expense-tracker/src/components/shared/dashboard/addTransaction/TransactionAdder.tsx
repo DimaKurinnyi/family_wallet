@@ -2,6 +2,7 @@
 
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
 import { cn } from '@/lib/utils';
+import { useEffect, useRef } from 'react';
 
 export type CategoryFlow = 'income' | 'expense' | 'both';
 
@@ -41,6 +42,7 @@ const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect })
           <button
             key={category.id}
             type="button"
+            data-selected={selectedId === category.id}
             onClick={() => onSelect(category.id)}
             className={cn(
               'flex flex-col items-center gap-1.5 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors hover:shadow-sm',
@@ -69,6 +71,22 @@ export const TransactionAdder: React.FC<Props> = ({
   onSelect,
 }) => {
   const transformValue = transactionType === 'income' ? 'translateX(0%)' : 'translateX(-50%)';
+  const scroller = useRef<HTMLDivElement>(null);
+
+  // При правке категория уже выбрана и может оказаться ниже видимой части.
+  // Подкручиваем список к ней один раз при открытии: дальше человек листает
+  // сам, и дёргать список под рукой было бы неприятно. Скроллим сам
+  // контейнер, а не через scrollIntoView, чтобы не поехала страница позади.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const box = scroller.current;
+      const selected = box?.querySelector<HTMLElement>('[data-selected="true"]');
+      if (!box || !selected) return;
+      const offset = selected.getBoundingClientRect().top - box.getBoundingClientRect().top;
+      box.scrollTop += offset - box.clientHeight / 2 + selected.clientHeight / 2;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   return (
     // Занимает всё свободное место между выбором типа и формой суммы.
@@ -78,7 +96,7 @@ export const TransactionAdder: React.FC<Props> = ({
       <h2 className="shrink-0 pb-2">Выберите категорию:</h2>
 
       {/* overflow-x-hidden — маска для переезда панелей, overflow-y-auto — скролл иконок */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+      <div ref={scroller} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div
           className="flex w-[200%] items-start transition-transform duration-300 ease-in-out"
           style={{ transform: transformValue }}>
