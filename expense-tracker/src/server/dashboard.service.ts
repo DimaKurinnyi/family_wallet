@@ -17,6 +17,33 @@ export async function getWalletSummary(walletId: string) {
   return { income, expense, balance: income - expense };
 }
 
+// Итоги сразу по всем кошелькам — одним запросом вместо запроса на кошелёк.
+// Нужны карусели на телефоне: она показывает карточки всех кошельков.
+export async function getWalletSummaries(walletIds: string[]) {
+  const grouped = await prisma.transaction.groupBy({
+    by: ['walletId', 'type'],
+    where: { walletId: { in: walletIds } },
+    _sum: { amount: true },
+  });
+
+  const byWallet = new Map<string, { income: number; expense: number; balance: number }>();
+  for (const id of walletIds) {
+    byWallet.set(id, { income: 0, expense: 0, balance: 0 });
+  }
+
+  for (const row of grouped) {
+    const entry = byWallet.get(row.walletId);
+    if (!entry) continue;
+    entry[row.type] = row._sum.amount ?? 0;
+  }
+
+  for (const entry of byWallet.values()) {
+    entry.balance = entry.income - entry.expense;
+  }
+
+  return byWallet;
+}
+
 export async function getWalletTransactions(walletId: string, take = 8) {
   return prisma.transaction.findMany({
     where: { walletId },

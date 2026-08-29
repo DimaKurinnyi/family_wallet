@@ -3,7 +3,7 @@ import type { TransactionView } from '@/components/shared/dashboard/Transactions
 import { resolveActiveWallet } from '@/server/activeWallet';
 import {
   getCategoriesForUser,
-  getWalletSummary,
+  getWalletSummaries,
   getWalletTransactions,
 } from '@/server/dashboard.service';
 import { getCurrentUser } from '@/server/session';
@@ -28,12 +28,17 @@ export default async function Dashboard() {
 
   const activeWallet = await resolveActiveWallet(wallets);
 
-  const [summary, transactions] = activeWallet
-    ? await Promise.all([
-        getWalletSummary(activeWallet.id),
-        getWalletTransactions(activeWallet.id),
-      ])
-    : [{ income: 0, expense: 0, balance: 0 }, []];
+  const [summaries, transactions] = await Promise.all([
+    getWalletSummaries(wallets.map((wallet) => wallet.id)),
+    activeWallet ? getWalletTransactions(activeWallet.id) : [],
+  ]);
+
+  const walletSummaries = wallets.map((wallet) => ({
+    id: wallet.id,
+    name: wallet.name,
+    type: wallet.type,
+    ...(summaries.get(wallet.id) ?? { income: 0, expense: 0, balance: 0 }),
+  }));
 
   const isShared = activeWallet?.type === 'shared';
 
@@ -63,13 +68,7 @@ export default async function Dashboard() {
         activeWalletId={activeWallet?.id ?? ''}
       />
       <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
-        <DashboardContent
-          balance={summary.balance}
-          income={summary.income}
-          expense={summary.expense}
-          walletName={activeWallet?.name}
-          walletType={activeWallet?.type}
-        />
+        <DashboardContent wallets={walletSummaries} activeWalletId={activeWallet?.id ?? ''} />
       </div>
       <Transactions className="max-w-[600px]" title="Операции" transactions={transactionViews} />
     </DashboardContainer>

@@ -1,17 +1,31 @@
+import { BalanceCarousel, type WalletSummary } from './BalanceCarousel';
 import { BalanceCard } from './BalanceCard';
 
 interface Props {
-  balance: number;
-  income: number;
-  expense: number;
-  walletName?: string;
-  walletType?: 'personal' | 'shared';
+  wallets: WalletSummary[];
+  activeWalletId: string;
 }
 
-export const DashboardContent: React.FC<Props> = ({ balance, income, expense, walletName, walletType }) => {
+export const DashboardContent: React.FC<Props> = ({ wallets, activeWalletId }) => {
+  const active = wallets.find((wallet) => wallet.id === activeWalletId) ?? wallets[0];
+
   return (
     <div className="mt-8 sm:mt-12 w-full max-w-[460px]">
-      <BalanceCard balance={balance} income={income} expense={expense} walletName={walletName} walletType={walletType} />
+      {/* Телефон — карусель со свайпом, десктоп — одна активная карточка:
+          листать мышью неудобно, а переключатель в шапке есть на обоих. */}
+      <BalanceCarousel wallets={wallets} activeWalletId={activeWalletId} />
+
+      {active ? (
+        <div className="hidden md:block">
+          <BalanceCard
+            balance={active.balance}
+            income={active.income}
+            expense={active.expense}
+            walletName={active.name}
+            walletType={active.type}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };
