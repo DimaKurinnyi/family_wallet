@@ -48,14 +48,17 @@ export async function updateWallet(userId: string, walletId: string, name: strin
 }
 
 export async function deleteWallet(userId: string, walletId: string) {
-  const wallet = await requireOwnedWallet(userId, walletId);
+  await requireOwnedWallet(userId, walletId);
 
-  // Удалять кошелёк с операциями нельзя: они уйдут вместе с историей.
-  const transactions = await prisma.transaction.count({ where: { walletId } });
-  if (transactions > 0) {
-    throw new WalletError('Сначала удалите операции этого кошелька', 400);
+  // Единственный кошелёк не удаляем: без кошелька дашборд превращается в
+  // пустой экран без выхода. Создать новый можно тут же, на этой странице.
+  const available = await prisma.wallet.count({ where: accessibleBy(userId) });
+  if (available <= 1) {
+    throw new WalletError('Нельзя удалить единственный кошелёк — сначала создайте другой', 400);
   }
 
+  // Операции уходят вместе с кошельком по каскаду. Сколько именно их
+  // будет удалено, интерфейс показывает до нажатия.
   await prisma.wallet.delete({ where: { id: walletId } });
 }
 
@@ -74,6 +77,7 @@ export async function getWalletWithPeople(userId: string, walletId: string) {
         where: { status: 'pending' },
         orderBy: { createdAt: 'desc' },
       },
+      _count: { select: { transactions: true } },
     },
   });
   if (!wallet) {

@@ -109,7 +109,9 @@ model Transaction {
   categoryId String?
   category   Category?       @relation(fields: [categoryId], references: [id])
   walletId   String
-  wallet     Wallet          @relation(fields: [walletId], references: [id])
+  // Удаление кошелька уносит его операции: они принадлежат только ему и
+  // без него не имеют смысла. Подтверждение спрашивается в интерфейсе.
+  wallet     Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
   userId     String // кто совершил транзакцию
   user       User            @relation(fields: [userId], references: [id])
   createdAt  DateTime        @default(now())

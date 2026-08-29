@@ -30,6 +30,7 @@ export default async function WalletsPage() {
     name: wallet.name,
     type: wallet.type,
     isOwner: wallet.ownerId === user.id,
+    transactionCount: wallet._count.transactions,
     owner: wallet.owner,
     members: wallet.members.map((member) => member.user),
     invites: wallet.invites.map((invite) => ({

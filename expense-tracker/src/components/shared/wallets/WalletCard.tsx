@@ -22,6 +22,7 @@ export type PendingInvite = { id: string; email: string; token: string };
 export type WalletView = {
   id: string;
   name: string;
+  transactionCount: number;
   type: 'personal' | 'shared';
   isOwner: boolean;
   owner: Person;
@@ -41,6 +42,7 @@ export const WalletCard: React.FC<{ wallet: WalletView; currentUserId: string }>
   const [memberState, memberForm] = useActionState(removeMemberAction, initial);
   const [revokeState, revokeForm] = useActionState(revokeInviteAction, initial);
   const [copied, setCopied] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const copyLink = async (token: string) => {
     const link = `${window.location.origin}/invite/${token}`;
@@ -66,21 +68,48 @@ export const WalletCard: React.FC<{ wallet: WalletView; currentUserId: string }>
           </span>
         </div>
 
-        {wallet.isOwner ? (
-          <form action={deleteForm}>
-            <input type="hidden" name="walletId" value={wallet.id} />
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              disabled={deleting}
-              aria-label="Удалить кошелёк"
-              className="text-gray-400 hover:text-red-600">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </form>
+        {wallet.isOwner && !confirmingDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfirmingDelete(true)}
+            aria-label="Удалить кошелёк"
+            className="text-gray-400 hover:text-red-600">
+            <Trash2 className="h-4 w-4" />
+          </Button>
         ) : null}
       </div>
+
+      {/* Удаление необратимо и уносит операции, поэтому спрашиваем явно и
+          называем число: «удалить кошелёк» и «удалить 47 записей» — это
+          для человека разные по весу решения. */}
+      {confirmingDelete ? (
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm text-red-800">
+            Удалить кошелёк «{wallet.name}»
+            {wallet.transactionCount > 0
+              ? ` вместе с операциями (${wallet.transactionCount})`
+              : ''}
+            ? Это действие нельзя отменить.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <form action={deleteForm}>
+              <input type="hidden" name="walletId" value={wallet.id} />
+              <Button type="submit" variant="destructive" size="sm" disabled={deleting}>
+                {deleting ? 'Удаляем…' : 'Удалить'}
+              </Button>
+            </form>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmingDelete(false)}>
+              Отмена
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {wallet.isOwner ? (
         <form action={renameForm} className="mt-4 flex gap-2">
