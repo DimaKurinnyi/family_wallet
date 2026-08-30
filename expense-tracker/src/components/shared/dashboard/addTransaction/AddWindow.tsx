@@ -17,6 +17,7 @@ import { BanknoteArrowUp, Plus } from 'lucide-react';
 import { useActionState, useEffect, useState } from 'react';
 import { InputAmount } from './InputAmount';
 import { TransactionAdder, type CategoryOption } from './TransactionAdder';
+import { useCategoryList } from './useCategoryList';
 
 const initialState: TransactionFormState = { error: null, ok: false };
 
@@ -38,6 +39,7 @@ export function AddWindow({ categories, walletId, triggerClassName, defaultCurre
   const [open, setOpen] = useState(false);
 
   const [state, formAction, isPending] = useActionState(createTransactionAction, initialState);
+  const { all: allCategories, add: addCategory } = useCategoryList(categories);
 
   const reset = () => {
     setTransactionType('expense');
@@ -53,7 +55,7 @@ export function AddWindow({ categories, walletId, triggerClassName, defaultCurre
     }
   }, [state.ok]);
 
-  const selectedCategory = categories.find((category) => category.id === categoryId) ?? null;
+  const selectedCategory = allCategories.find((category) => category.id === categoryId) ?? null;
   const canSubmit = Boolean(walletId) && Boolean(categoryId) && Number(amount) > 0;
 
   return (
@@ -122,10 +124,11 @@ export function AddWindow({ categories, walletId, triggerClassName, defaultCurre
 
           <div className="flex flex-col flex-1 min-h-0 px-3">
             <TransactionAdder
-              categories={categories}
+              categories={allCategories}
               transactionType={transactionType}
               selectedId={categoryId}
               onSelect={setCategoryId}
+              onCreated={addCategory}
             />
           </div>
 

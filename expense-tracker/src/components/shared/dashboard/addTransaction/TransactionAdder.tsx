@@ -2,7 +2,9 @@
 
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
 import { cn } from '@/lib/utils';
-import { useEffect, useRef } from 'react';
+import { Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CreateCategoryDialog } from './CreateCategoryDialog';
 
 export type CategoryFlow = 'income' | 'expense' | 'both';
 
@@ -18,6 +20,8 @@ interface Props {
   transactionType: 'income' | 'expense';
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Своя категория создана — родитель добавляет её в свой список */
+  onCreated: (category: CategoryOption) => void;
 }
 
 // Категории со стороной both попадают в обе панели: «Подарки» можно и
@@ -30,9 +34,10 @@ interface PanelProps {
   side: 'income' | 'expense';
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onAdd: () => void;
 }
 
-const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect }) => {
+const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect, onAdd }) => {
   const isIncome = side === 'income';
 
   return (
@@ -59,6 +64,27 @@ const Panel: React.FC<PanelProps> = ({ categories, side, selectedId, onSelect })
             <p className="text-xs sm:text-sm text-center leading-tight">{category.name}</p>
           </button>
         ))}
+
+        {/* Плюс в конце списка — своя категория. Пунктир, чтобы плитка
+            читалась как «здесь пока пусто», а не как ещё одна категория. */}
+        <button
+          type="button"
+          onClick={onAdd}
+          className={cn(
+            'flex flex-col items-center gap-1.5 p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors hover:shadow-sm',
+            isIncome ? 'hover:bg-[#f2ecfd]' : 'hover:bg-[#fdf0ec]'
+          )}>
+          <div
+            className={cn(
+              'p-2 rounded-full border-2 border-dashed',
+              isIncome
+                ? 'border-[#8144e9]/40 text-[#8144e9]'
+                : 'border-[#ee7048]/40 text-[#ee7048]'
+            )}>
+            <Plus />
+          </div>
+          <p className="text-xs sm:text-sm text-center leading-tight text-gray-500">Своя</p>
+        </button>
       </div>
     </div>
   );
@@ -69,7 +95,9 @@ export const TransactionAdder: React.FC<Props> = ({
   transactionType,
   selectedId,
   onSelect,
+  onCreated,
 }) => {
+  const [creating, setCreating] = useState(false);
   const transformValue = transactionType === 'income' ? 'translateX(0%)' : 'translateX(-50%)';
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -105,15 +133,31 @@ export const TransactionAdder: React.FC<Props> = ({
             side="income"
             selectedId={selectedId}
             onSelect={onSelect}
+            onAdd={() => setCreating(true)}
           />
           <Panel
             categories={forFlow(categories, 'expense')}
             side="expense"
             selectedId={selectedId}
             onSelect={onSelect}
+            onAdd={() => setCreating(true)}
           />
         </div>
       </div>
+
+      {/* Монтируется только на время показа: каждое открытие начинается с
+          пустого поля, без ошибки от прошлой попытки.
+          Сторона берётся из текущей панели: плюс на другой не виден. */}
+      {creating ? (
+        <CreateCategoryDialog
+          flow={transactionType}
+          onClose={() => setCreating(false)}
+          onCreated={(category) => {
+            onCreated(category);
+            onSelect(category.id);
+          }}
+        />
+      ) : null}
     </div>
   );
 };

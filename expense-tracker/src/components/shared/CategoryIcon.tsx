@@ -33,6 +33,10 @@ const ICONS: Record<string, LucideIcon> = {
   Music,
 };
 
+// Тот же список, из которого выбирают иконку для своей категории:
+// предлагать можно только то, что здесь нарисуется.
+export const ICON_NAMES = Object.keys(ICONS);
+
 interface Props {
   name?: string | null;
   className?: string;

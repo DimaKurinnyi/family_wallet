@@ -4,8 +4,10 @@ import prisma from '@/lib/prisma';
 import { isCurrency } from '@/lib/currency';
 import { ACTIVE_WALLET_COOKIE } from '@/server/activeWallet';
 import { DISPLAY_CURRENCY_COOKIE } from '@/server/displayCurrency';
+import { CategoryError, createCategory } from '@/server/category.service';
 import { requireUserId } from '@/server/session';
 import { deleteTransaction, TransactionError, updateTransaction } from '@/server/transaction.service';
+import { createCategorySchema } from '@/server/validation/createCategory.schema';
 import { createTransactionSchema, updateTransactionSchema } from '@/server/validation/transaction.schema';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -151,5 +153,60 @@ export async function deleteTransactionAction(
     }
     console.error('Error in deleteTransactionAction:', error);
     return { error: 'Не удалось удалить операцию', ok: false };
+  }
+}
+
+export type NewCategory = {
+  id: string;
+  name: string;
+  iconName: string | null;
+  flow: 'income' | 'expense' | 'both';
+};
+
+export type CategoryFormState = {
+  error: string | null;
+  /** Созданная категория — форма сразу выбирает её в списке */
+  category: NewCategory | null;
+};
+
+export async function createCategoryAction(
+  _prev: CategoryFormState,
+  formData: FormData
+): Promise<CategoryFormState> {
+  try {
+    const userId = await requireUserId();
+
+    const parsed = createCategorySchema.safeParse({
+      name: formData.get('name'),
+      iconName: formData.get('iconName'),
+      flow: formData.get('flow') ?? undefined,
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? 'Проверьте данные', category: null };
+    }
+
+    const category = await createCategory(userId, parsed.data);
+
+    // Категория появляется в списках на всех страницах, где выбирают её.
+    revalidatePath('/dashboard');
+    revalidatePath('/expenses');
+    revalidatePath('/wallets');
+
+    return {
+      error: null,
+      category: {
+        id: category.id,
+        name: category.name,
+        iconName: category.icon?.name ?? null,
+        flow: category.flow,
+      },
+    };
+  } catch (error) {
+    if (error instanceof CategoryError) {
+      return { error: error.message, category: null };
+    }
+    console.error('Error in createCategoryAction:', error);
+    return { error: 'Не удалось создать категорию', category: null };
   }
 }
