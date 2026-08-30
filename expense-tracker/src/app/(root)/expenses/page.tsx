@@ -1,10 +1,17 @@
 import { DashboardContainer, Header } from '@/components/shared';
+import type { FlowPoint } from '@/components/shared/charts/FlowBars';
+import { FlowBars } from '@/components/shared/charts/FlowBars';
+import { IncomeCurve } from '@/components/shared/charts/IncomeCurve';
 import { CategoryDonut, type CategorySlice } from '@/components/shared/expenses/CategoryDonut';
 import { MonthTabs, type MonthTab } from '@/components/shared/expenses/MonthTabs';
 import { convertTotals, type Rates } from '@/lib/currency';
 import { CURRENCY_META } from '@/lib/currency';
 import { resolveActiveWallet } from '@/server/activeWallet';
-import { getCategoriesForUser, getExpenseByCategory } from '@/server/dashboard.service';
+import {
+  getCategoriesForUser,
+  getExpenseByCategory,
+  getWeeklyTotals,
+} from '@/server/dashboard.service';
 import { getDisplayCurrency } from '@/server/displayCurrency';
 import { getRates } from '@/server/rates.service';
 import { getCurrentUser } from '@/server/session';
@@ -29,6 +36,15 @@ const monthFullFormatter = new Intl.DateTimeFormat('ru-RU', {
 const monthFull = (date: Date) => monthFullFormatter.format(date).replace(' г.', '');
 
 const monthKey = (date: Date) => date.toISOString().slice(0, 7);
+// «14 августа» — из него берётся только название месяца в нужном падеже.
+const dayMonthFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+const dayMonth = {
+  format: (date: Date) => dayMonthFormatter.format(date).replace(/^\d+\s/, ''),
+};
 
 export default async function ExpensesPage({
   searchParams,
@@ -75,7 +91,12 @@ export default async function ExpensesPage({
   const from = new Date(Date.UTC(year, month - 1, 1));
   const to = new Date(Date.UTC(year, month, 1));
 
-  const rows = activeWallet ? await getExpenseByCategory(activeWallet.id, from, to) : [];
+  const [rows, weeks] = activeWallet
+    ? await Promise.all([
+        getExpenseByCategory(activeWallet.id, from, to),
+        getWeeklyTotals(activeWallet.id, from, to),
+      ])
+    : [[], []];
 
   // Курса нет — складывать разные валюты нельзя. Такие категории отбрасываем
   // не молча: ниже об этом сказано прямо.
@@ -115,6 +136,21 @@ export default async function ExpensesPage({
     share: total > 0 ? (row.amount / total) * 100 : 0,
     muted: row.muted,
   }));
+
+  // Недели подписываем числами месяца: «1–7», «8–14». Дата начала недели
+  // как таковая читателю не нужна, ему нужен кусок месяца.
+  const weekPoints: FlowPoint[] = weeks.map((week) => {
+    const days = `${week.start.getUTCDate()}–${week.end.getUTCDate()}`;
+    return {
+      key: week.key,
+      label: days,
+      fullLabel: `${days} ${dayMonth.format(week.end)}`,
+      income: convertTotals(week.income, currency, rates) ?? 0,
+      expense: convertTotals(week.expense, currency, rates) ?? 0,
+    };
+  });
+
+  const incomeTotal = weekPoints.reduce((sum, week) => sum + week.income, 0);
 
   const activeMonth = months.find((monthTab) => monthTab.key === activeKey);
   const symbol = CURRENCY_META[currency].symbol;
@@ -169,6 +205,26 @@ export default async function ExpensesPage({
             </p>
           ) : null}
         </section>
+
+        <FlowBars
+          className="shadow-sm"
+          points={weekPoints}
+          currency={currency}
+          title="Денежный поток"
+          hint="Выберите неделю"
+          emptyText="В этом месяце операций не было — здесь появятся столбцы по неделям."
+        />
+
+        <IncomeCurve
+          points={weekPoints}
+          currency={currency}
+          title="Доход"
+          total={incomeTotal}
+          period={activeMonth?.title}
+          hint="Выберите неделю"
+          emptyText="В этом месяце доходов не было."
+          className="shadow-sm"
+        />
       </div>
     </DashboardContainer>
   );

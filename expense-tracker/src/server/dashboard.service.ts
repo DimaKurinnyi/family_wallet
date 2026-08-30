@@ -131,3 +131,57 @@ export async function getExpenseByCategory(walletId: string, from: Date, to: Dat
 
   return [...totals.entries()].map(([id, entry]) => ({ id, ...entry }));
 }
+
+// Доходы и расходы по неделям внутри периода. Неделя начинается с
+// понедельника и считается в UTC — явно, а не по часовому поясу базы:
+// иначе на разных серверах границы недель разъезжались бы.
+//
+// Возвращаются и пустые недели: без них ось времени рвётся и соседние
+// столбцы оказываются рядом, будто между ними ничего не было.
+export async function getWeeklyTotals(walletId: string, from: Date, to: Date) {
+  const rows = await prisma.$queryRaw<{ week: string; type: string; currency: string; total: number }[]>`
+    SELECT to_char(date_trunc('week', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS week,
+           type::text AS type,
+           currency,
+           SUM(amount)::float8 AS total
+    FROM "Transaction"
+    WHERE "walletId" = ${walletId}
+      AND "createdAt" >= ${from}
+      AND "createdAt" < ${to}
+    GROUP BY 1, 2, 3
+  `;
+
+  type ByCurrency = Record<string, number>;
+  const totals = new Map<string, { income: ByCurrency; expense: ByCurrency }>();
+  for (const row of rows) {
+    const entry = totals.get(row.week) ?? { income: {}, expense: {} };
+    if (row.type === 'income' || row.type === 'expense') {
+      entry[row.type][row.currency] = (entry[row.type][row.currency] ?? 0) + row.total;
+    }
+    totals.set(row.week, entry);
+  }
+
+  // Понедельник на неделе, в которую попадает начало периода. getUTCDay()
+  // отдаёт воскресенье нулём, поэтому сдвиг для него — шесть дней назад.
+  const cursor = new Date(from);
+  cursor.setUTCDate(cursor.getUTCDate() - ((cursor.getUTCDay() + 6) % 7));
+
+  const weeks: { key: string; start: Date; end: Date; income: ByCurrency; expense: ByCurrency }[] = [];
+  while (cursor < to) {
+    const key = cursor.toISOString().slice(0, 10);
+    const weekEnd = new Date(cursor);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+    const entry = totals.get(key) ?? { income: {}, expense: {} };
+    weeks.push({
+      key,
+      // Крайние недели обрезаем по периоду: «29 июля — 4 августа» в своде
+      // за август сбивало бы с толку.
+      start: new Date(Math.max(cursor.getTime(), from.getTime())),
+      end: new Date(Math.min(weekEnd.getTime(), to.getTime() - 1)),
+      ...entry,
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+
+  return weeks;
+}
