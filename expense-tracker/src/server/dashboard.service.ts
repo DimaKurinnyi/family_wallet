@@ -24,7 +24,9 @@ export async function getWalletSummaries(walletIds: string[]) {
   return byWallet;
 }
 
-export async function getWalletTransactions(walletId: string, take = 8) {
+// Берём заметно больше восьми: список теперь разбит по дням и скроллится
+// в своей высоте, так что длинная история не растягивает страницу.
+export async function getWalletTransactions(walletId: string, take = 60) {
   return prisma.transaction.findMany({
     where: { walletId },
     include: {

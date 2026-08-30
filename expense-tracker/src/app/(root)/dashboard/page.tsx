@@ -1,6 +1,9 @@
 import { DashboardContainer, DashboardContent, Header, MonthlyFlow, Transactions } from '@/components/shared';
 import type { MonthPoint } from '@/components/shared/dashboard/MonthlyFlow';
-import type { TransactionView } from '@/components/shared/dashboard/Transactions';
+import type {
+  TransactionGroup,
+  TransactionView,
+} from '@/components/shared/dashboard/Transactions';
 import { convert, convertTotals, isCurrency, type Rates } from '@/lib/currency';
 import { resolveActiveWallet } from '@/server/activeWallet';
 import { getDisplayCurrency } from '@/server/displayCurrency';
@@ -16,11 +19,19 @@ import { getUserWallets } from '@/server/wallet.service';
 
 // Дату форматируем здесь, а не в клиентском компоненте: иначе серверный и
 // клиентский рендер разойдутся из-за разных часовых поясов.
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+const timeFormatter = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const dayFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+const dayWithYearFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
+  month: 'long',
+  year: 'numeric',
+});
+// Ключ дня в том же часовом поясе, что и подписи: сравнивать ISO-строку от
+// toISOString() нельзя — она всегда в UTC и под вечер даёт «завтра».
+const dayKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
 });
 
 const monthShort = new Intl.DateTimeFormat('ru-RU', { month: 'short', timeZone: 'UTC' });
@@ -83,11 +94,40 @@ export default async function Dashboard() {
     type: transaction.type,
     rawAmount: transaction.amount,
     rawCurrency: isCurrency(transaction.currency) ? transaction.currency : currency,
-    dateLabel: dateFormatter.format(transaction.createdAt),
+    timeLabel: timeFormatter.format(transaction.createdAt),
     comment: transaction.comment,
     authorName: isShared ? transaction.user.name?.trim() || transaction.user.email : null,
     canEdit: isWalletOwner || transaction.userId === user.id,
   }));
+
+  // Группируем по дню. Порядок операций уже по убыванию даты, так что
+  // достаточно складывать в последнюю группу, пока день не сменился.
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const todayKey = dayKeyFormatter.format(today);
+  const yesterdayKey = dayKeyFormatter.format(yesterday);
+
+  const dayLabel = (date: Date, key: string) => {
+    if (key === todayKey) return 'Сегодня';
+    if (key === yesterdayKey) return 'Вчера';
+    // Год добавляем только у прошлых лет: «29 августа 2025» среди свежих
+    // записей читается тяжелее, чем просто «29 августа».
+    return date.getFullYear() === today.getFullYear()
+      ? dayFormatter.format(date)
+      : dayWithYearFormatter.format(date);
+  };
+
+  const groups: TransactionGroup[] = [];
+  transactions.forEach((transaction, index) => {
+    const key = dayKeyFormatter.format(transaction.createdAt);
+    const last = groups.at(-1);
+    if (last?.key === key) {
+      last.items.push(transactionViews[index]);
+    } else {
+      groups.push({ key, label: dayLabel(transaction.createdAt, key), items: [transactionViews[index]] });
+    }
+  });
 
   const monthPoints: MonthPoint[] = monthlyTotals.map((month) => ({
     key: month.key,
@@ -131,7 +171,7 @@ export default async function Dashboard() {
       <Transactions
         className="max-w-[600px] mx-auto"
         title="Операции"
-        transactions={transactionViews}
+        groups={groups}
         categories={categoryOptions}
         currency={currency}
       />

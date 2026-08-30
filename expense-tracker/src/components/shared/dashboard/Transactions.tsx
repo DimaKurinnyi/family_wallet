@@ -27,7 +27,8 @@ export type TransactionView = {
   /** Как записано в базе — с этим работает форма правки */
   rawAmount: number;
   rawCurrency: Currency;
-  dateLabel: string;
+  /** Только время: дату несёт заголовок группы */
+  timeLabel: string;
   comment: string | null;
   // Заполняется только для общего кошелька: в личном автор всегда один
   // и подпись была бы шумом.
@@ -36,8 +37,15 @@ export type TransactionView = {
   canEdit: boolean;
 };
 
+/** День операций: «Сегодня», «Вчера» или дата. */
+export type TransactionGroup = {
+  key: string;
+  label: string;
+  items: TransactionView[];
+};
+
 interface Props {
-  transactions: TransactionView[];
+  groups: TransactionGroup[];
   categories: CategoryOption[];
   className?: string;
   title?: string;
@@ -95,7 +103,7 @@ const Row: React.FC<RowProps> = ({ transaction, symbol, onEdit }) => {
       : `${symbol}${format(transaction.amount)}`;
 
   return (
-    <div className="group mt-6">
+    <div className="group mt-4">
       {/* Телефон: строка — дорожка со снапом, вторая «страница» это кнопки.
           Тянем влево — открываются «Изменить» и «Удалить». На десктопе
           дорожка не нужна: там иконки появляются по наведению. */}
@@ -127,7 +135,7 @@ const Row: React.FC<RowProps> = ({ transaction, symbol, onEdit }) => {
                   : ''}
                 {transaction.authorName ? `${transaction.authorName} · ` : ''}
                 {transaction.comment ? `${transaction.comment} · ` : ''}
-                {transaction.dateLabel}
+                {transaction.timeLabel}
               </p>
             </div>
           </div>
@@ -228,7 +236,7 @@ const Row: React.FC<RowProps> = ({ transaction, symbol, onEdit }) => {
 };
 
 export const Transactions: React.FC<Props> = ({
-  transactions,
+  groups,
   categories,
   className,
   title,
@@ -248,19 +256,31 @@ export const Transactions: React.FC<Props> = ({
           <h2 className="font-semibold text-2xl">{title}</h2>
         </div>
 
-        {transactions.length === 0 ? (
+        {groups.length === 0 ? (
           <p className="mx-2 sm:mx-8 mt-6 text-gray-400">
             Пока пусто. Добавьте первую операцию кнопкой «плюс» справа.
           </p>
         ) : (
-          <div className="mx-2 sm:mx-8">
-            {transactions.map((transaction) => (
-              <Row
-                key={transaction.id}
-                transaction={transaction}
-                symbol={symbol}
-                onEdit={setEditing}
-              />
+          // Список живёт в своей высоте и скроллится внутри: иначе месяц
+          // операций растягивал бы страницу, и до всего, что ниже, пришлось
+          // бы долго крутить.
+          <div className="mx-2 sm:mx-8 mt-2 max-h-[22rem] overflow-y-auto overflow-x-hidden pr-1 sm:max-h-[28rem]">
+            {groups.map((group) => (
+              <div key={group.key}>
+                {/* Заголовок дня липнет к верху блока: при долгой прокрутке
+                    видно, к какой дате относятся строки под рукой. */}
+                <h3 className="sticky top-0 z-20 bg-white pb-2 pt-3 text-sm font-semibold text-gray-400">
+                  {group.label}
+                </h3>
+                {group.items.map((transaction) => (
+                  <Row
+                    key={transaction.id}
+                    transaction={transaction}
+                    symbol={symbol}
+                    onEdit={setEditing}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         )}
