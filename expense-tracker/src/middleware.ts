@@ -40,5 +40,12 @@ export async function middleware(req: NextRequest) {
 export const config = {
   // /invite намеренно не защищаем: страница сама зовёт гостя
   // зарегистрироваться и возвращает его обратно по ссылке.
-  matcher: ['/api/:path*', '/dashboard/:path*', '/wallets/:path*', '/login', '/register'],
+  matcher: [
+    '/api/:path*',
+    '/dashboard/:path*',
+    '/expenses/:path*',
+    '/wallets/:path*',
+    '/login',
+    '/register',
+  ],
 };

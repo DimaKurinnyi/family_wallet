@@ -82,6 +82,7 @@ export async function selectWalletAction(walletId: string) {
   });
 
   revalidatePath('/dashboard');
+  revalidatePath('/expenses');
 }
 
 export async function selectCurrencyAction(currency: string) {
@@ -100,6 +101,7 @@ export async function selectCurrencyAction(currency: string) {
   });
 
   revalidatePath('/dashboard');
+  revalidatePath('/expenses');
   revalidatePath('/wallets');
 }
 

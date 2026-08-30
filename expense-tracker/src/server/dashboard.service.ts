@@ -92,3 +92,42 @@ export async function getCategoriesForUser(userId: string) {
     orderBy: { name: 'asc' },
   });
 }
+
+// Расходы за период в разрезе категорий. Валюта в разрезе тоже: сложить
+// гривны с долларами можно только зная курс, а он известен при показе.
+export async function getExpenseByCategory(walletId: string, from: Date, to: Date) {
+  const grouped = await prisma.transaction.groupBy({
+    by: ['categoryId', 'currency'],
+    where: { walletId, type: 'expense', createdAt: { gte: from, lt: to } },
+    _sum: { amount: true },
+  });
+
+  const categoryIds = grouped
+    .map((row) => row.categoryId)
+    .filter((id): id is string => id !== null);
+
+  const categories = await prisma.category.findMany({
+    where: { id: { in: categoryIds } },
+    include: { icon: true },
+  });
+  const byId = new Map(categories.map((category) => [category.id, category]));
+
+  type ByCurrency = Record<string, number>;
+  const totals = new Map<string, { name: string; iconName: string | null; byCurrency: ByCurrency }>();
+
+  for (const row of grouped) {
+    // Операции без категории всё равно попадают в свод: молча пропасть из
+    // суммы расходов они не должны.
+    const key = row.categoryId ?? 'none';
+    const category = row.categoryId ? byId.get(row.categoryId) : undefined;
+    const entry = totals.get(key) ?? {
+      name: category?.name ?? 'Без категории',
+      iconName: category?.icon?.name ?? null,
+      byCurrency: {},
+    };
+    entry.byCurrency[row.currency] = (entry.byCurrency[row.currency] ?? 0) + (row._sum.amount ?? 0);
+    totals.set(key, entry);
+  }
+
+  return [...totals.entries()].map(([id, entry]) => ({ id, ...entry }));
+}
