@@ -3,7 +3,7 @@ import type { FlowPoint } from '@/components/shared/charts/FlowBars';
 import { FlowBars } from '@/components/shared/charts/FlowBars';
 import { IncomeCurve } from '@/components/shared/charts/IncomeCurve';
 import { CategoryDonut, type CategorySlice } from '@/components/shared/expenses/CategoryDonut';
-import { MonthTabs, type MonthTab } from '@/components/shared/expenses/MonthTabs';
+import { TabStrip, type Tab } from '@/components/shared/expenses/TabStrip';
 import { convertTotals, type Rates } from '@/lib/currency';
 import { CURRENCY_META } from '@/lib/currency';
 import { resolveActiveWallet } from '@/server/activeWallet';
@@ -15,7 +15,7 @@ import {
 import { getDisplayCurrency } from '@/server/displayCurrency';
 import { getRates } from '@/server/rates.service';
 import { getCurrentUser } from '@/server/session';
-import { getUserWallets } from '@/server/wallet.service';
+import { getUserWallets, getWalletWithPeople } from '@/server/wallet.service';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Расходы — Expense Tracker' };
@@ -49,10 +49,10 @@ const dayMonth = {
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string }>;
+  searchParams: Promise<{ m?: string; u?: string }>;
 }) {
   const user = await getCurrentUser();
-  const { m } = await searchParams;
+  const { m, u } = await searchParams;
 
   const [wallets, categories, currency, ratesResult] = await Promise.all([
     getUserWallets(user.id),
@@ -68,7 +68,7 @@ export default async function ExpensesPage({
   // как их группирует база: иначе на границе месяца лента и суммы разошлись бы.
   const now = new Date();
   const current = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const months: MonthTab[] = [];
+  const months: { key: string; label: string; title: string }[] = [];
   for (let back = MONTHS - 1; back >= 0; back -= 1) {
     const date = new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() - back, 1));
     const title = monthFull(date);
@@ -91,10 +91,24 @@ export default async function ExpensesPage({
   const from = new Date(Date.UTC(year, month - 1, 1));
   const to = new Date(Date.UTC(year, month, 1));
 
+  // Участники нужны только у общего кошелька: в личном «все» и «я» — одно
+  // и то же, и лента из одной кнопки только занимала бы место.
+  const people =
+    activeWallet?.type === 'shared'
+      ? await getWalletWithPeople(user.id, activeWallet.id).then((wallet) => [
+          wallet.owner,
+          ...wallet.members.map((member) => member.user),
+        ])
+      : [];
+
+  // Автор берётся только из списка людей кошелька: чужой id в ?u= не должен
+  // показывать чужие траты и вообще что-либо менять.
+  const authorId = people.some((person) => person.id === u) ? u : undefined;
+
   const [rows, weeks] = activeWallet
     ? await Promise.all([
-        getExpenseByCategory(activeWallet.id, from, to),
-        getWeeklyTotals(activeWallet.id, from, to),
+        getExpenseByCategory(activeWallet.id, from, to, authorId),
+        getWeeklyTotals(activeWallet.id, from, to, authorId),
       ])
     : [[], []];
 
@@ -158,6 +172,38 @@ export default async function ExpensesPage({
   const activeMonth = months.find((monthTab) => monthTab.key === activeKey);
   const symbol = CURRENCY_META[currency].symbol;
 
+  // Оба выбора живут в адресе, поэтому каждая ссылка несёт и месяц, и
+  // участника: иначе переключение месяца сбрасывало бы фильтр по человеку.
+  const href = (params: { m?: string; u?: string }) => {
+    const query = new URLSearchParams({ m: activeKey });
+    if (authorId) query.set('u', authorId);
+    for (const [name, value] of Object.entries(params)) {
+      if (value) query.set(name, value);
+      else query.delete(name);
+    }
+    return `/expenses?${query}`;
+  };
+
+  const monthTabs: Tab[] = months.map((month) => ({
+    ...month,
+    href: href({ m: month.key }),
+  }));
+
+  const displayName = (person: { name: string | null; email: string }) =>
+    person.name?.trim() || person.email;
+
+  const personTabs: Tab[] = people.length
+    ? [
+        { key: 'all', label: 'Общие', title: 'Расходы всех участников', href: href({ u: '' }) },
+        ...people.map((person) => ({
+          key: person.id,
+          label: person.id === user.id ? 'Мои' : displayName(person),
+          title: displayName(person),
+          href: href({ u: person.id }),
+        })),
+      ]
+    : [];
+
   return (
     <DashboardContainer
       categories={categories.map((category) => ({
@@ -176,7 +222,20 @@ export default async function ExpensesPage({
       />
 
       <div className="mx-auto mt-6 flex w-full max-w-[720px] flex-col gap-6">
-        <MonthTabs months={months} activeKey={activeKey} />
+        <div className="flex flex-col gap-1">
+          <TabStrip tabs={monthTabs} activeKey={activeKey} ariaLabel="Месяц" />
+
+          {/* Второй ряд только у общего кошелька: в личном «общие» и «мои» —
+              одно и то же. Оформлен мельче, чтобы не спорить с месяцами. */}
+          {personTabs.length ? (
+            <TabStrip
+              tabs={personTabs}
+              activeKey={authorId ?? 'all'}
+              ariaLabel="Чьи расходы"
+              variant="secondary"
+            />
+          ) : null}
+        </div>
 
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

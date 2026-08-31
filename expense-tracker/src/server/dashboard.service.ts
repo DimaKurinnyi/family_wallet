@@ -95,10 +95,23 @@ export async function getCategoriesForUser(userId: string) {
 
 // Расходы за период в разрезе категорий. Валюта в разрезе тоже: сложить
 // гривны с долларами можно только зная курс, а он известен при показе.
-export async function getExpenseByCategory(walletId: string, from: Date, to: Date) {
+//
+// authorId сужает свод до одного участника общего кошелька. Проверять его
+// здесь не надо: страница берёт id только из списка людей кошелька.
+export async function getExpenseByCategory(
+  walletId: string,
+  from: Date,
+  to: Date,
+  authorId?: string
+) {
   const grouped = await prisma.transaction.groupBy({
     by: ['categoryId', 'currency'],
-    where: { walletId, type: 'expense', createdAt: { gte: from, lt: to } },
+    where: {
+      walletId,
+      type: 'expense',
+      createdAt: { gte: from, lt: to },
+      ...(authorId ? { userId: authorId } : {}),
+    },
     _sum: { amount: true },
   });
 
@@ -138,7 +151,7 @@ export async function getExpenseByCategory(walletId: string, from: Date, to: Dat
 //
 // Возвращаются и пустые недели: без них ось времени рвётся и соседние
 // столбцы оказываются рядом, будто между ними ничего не было.
-export async function getWeeklyTotals(walletId: string, from: Date, to: Date) {
+export async function getWeeklyTotals(walletId: string, from: Date, to: Date, authorId?: string) {
   const rows = await prisma.$queryRaw<{ week: string; type: string; currency: string; total: number }[]>`
     SELECT to_char(date_trunc('week', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS week,
            type::text AS type,
@@ -148,6 +161,8 @@ export async function getWeeklyTotals(walletId: string, from: Date, to: Date) {
     WHERE "walletId" = ${walletId}
       AND "createdAt" >= ${from}
       AND "createdAt" < ${to}
+      -- Фильтр по участнику: NULL означает «все», и условие становится истинным
+      AND (${authorId ?? null}::text IS NULL OR "userId" = ${authorId ?? null})
     GROUP BY 1, 2, 3
   `;
 
