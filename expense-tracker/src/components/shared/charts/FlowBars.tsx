@@ -2,6 +2,7 @@
 
 import { CURRENCY_META, type Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
 export type FlowPoint = {
@@ -36,6 +37,12 @@ interface Props {
   /** Подсказка в строке значений, пока никуда не навели */
   hint: string;
   emptyText: string;
+  /**
+   * Итог за весь период под заголовком: остаток и из чего он сложился.
+   * Без него рисуется обычная легенда — на дашборде столбцы охватывают
+   * полгода, и «за месяц» там сказать не о чем.
+   */
+  summary?: { label: string; income: number; expense: number };
   className?: string;
 }
 
@@ -46,6 +53,7 @@ export const FlowBars: React.FC<Props> = ({
   title,
   hint,
   emptyText,
+  summary,
   className,
 }) => {
   const symbol = CURRENCY_META[currency].symbol;
@@ -64,22 +72,53 @@ export const FlowBars: React.FC<Props> = ({
     if (event.pointerType === 'mouse') setHovered(null);
   };
 
+  const balance = summary ? summary.income - summary.expense : 0;
+
   return (
     <section className={cn('rounded-2xl border border-gray-100 bg-white p-4 sm:p-6', className)}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
 
-        <div className="flex items-center gap-4 text-sm text-gray-500">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: INCOME }} />
-            Доход
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: EXPENSE }} />
-            Расход
-          </span>
-        </div>
+        {/* Со сводкой отдельная легенда не нужна: те же два цвета стоят там
+            рядом с названиями и суммами, а стрелка задаёт направление. */}
+        {summary ? null : (
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: INCOME }} />
+              Доход
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: EXPENSE }} />
+              Расход
+            </span>
+          </div>
+        )}
       </div>
+
+      {summary ? (
+        <div className="mt-2">
+          <p className="text-sm text-gray-400">{summary.label}</p>
+          {/* Минус выносим перед символом валюты: «−$480,00», а не «$−480,00» */}
+          <p className="text-3xl font-bold tabular-nums sm:text-4xl">
+            {balance < 0 ? '−' : ''}
+            {symbol}
+            {money(Math.abs(balance))}
+          </p>
+
+          <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm tabular-nums">
+            <span className="flex items-center gap-1 font-medium" style={{ color: INCOME }}>
+              <ChevronUp className="h-4 w-4" />
+              Доход {symbol}
+              {money(summary.income)}
+            </span>
+            <span className="flex items-center gap-1 font-medium" style={{ color: EXPENSE }}>
+              <ChevronDown className="h-4 w-4" />
+              Расход {symbol}
+              {money(summary.expense)}
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       {max === 0 ? (
         <p className="mt-6 text-gray-400">{emptyText}</p>

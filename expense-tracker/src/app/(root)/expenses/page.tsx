@@ -150,7 +150,10 @@ export default async function ExpensesPage({
     };
   });
 
+  // Считаем по тем же неделям, что и столбцы: свод под заголовком обязан
+  // сходиться с тем, что нарисовано под ним.
   const incomeTotal = weekPoints.reduce((sum, week) => sum + week.income, 0);
+  const expenseTotal = weekPoints.reduce((sum, week) => sum + week.expense, 0);
 
   const activeMonth = months.find((monthTab) => monthTab.key === activeKey);
   const symbol = CURRENCY_META[currency].symbol;
@@ -213,6 +216,11 @@ export default async function ExpensesPage({
           title="Денежный поток"
           hint="Выберите неделю"
           emptyText="В этом месяце операций не было — здесь появятся столбцы по неделям."
+          summary={{
+            label: `Остаток за ${activeMonth?.title ?? 'месяц'}`,
+            income: incomeTotal,
+            expense: expenseTotal,
+          }}
         />
 
         <IncomeCurve
