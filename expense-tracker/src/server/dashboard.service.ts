@@ -200,3 +200,68 @@ export async function getWeeklyTotals(walletId: string, from: Date, to: Date, au
 
   return weeks;
 }
+
+// Доходы и расходы по месяцам внутри периода — для годового свода. Месяц
+// считается в UTC явно, как и неделя: границы должны совпадать с теми, по
+// которым строится лента.
+export async function getMonthlyTotalsInRange(
+  walletId: string,
+  from: Date,
+  to: Date,
+  authorId?: string
+) {
+  const rows = await prisma.$queryRaw<{ month: string; type: string; currency: string; total: number }[]>`
+    SELECT to_char(date_trunc('month', "createdAt" AT TIME ZONE 'UTC'), 'YYYY-MM') AS month,
+           type::text AS type,
+           currency,
+           SUM(amount)::float8 AS total
+    FROM "Transaction"
+    WHERE "walletId" = ${walletId}
+      AND "createdAt" >= ${from}
+      AND "createdAt" < ${to}
+      -- Фильтр по участнику: NULL означает «все», и условие становится истинным
+      AND (${authorId ?? null}::text IS NULL OR "userId" = ${authorId ?? null})
+    GROUP BY 1, 2, 3
+  `;
+
+  type ByCurrency = Record<string, number>;
+  const totals = new Map<string, { income: ByCurrency; expense: ByCurrency }>();
+  for (const row of rows) {
+    const entry = totals.get(row.month) ?? { income: {}, expense: {} };
+    if (row.type === 'income' || row.type === 'expense') {
+      entry[row.type][row.currency] = (entry[row.type][row.currency] ?? 0) + row.total;
+    }
+    totals.set(row.month, entry);
+  }
+
+  // Пустые месяцы тоже нужны: без них ось времени рвётся и соседние точки
+  // оказываются рядом, будто между ними ничего не было.
+  const months: { key: string; date: Date; income: ByCurrency; expense: ByCurrency }[] = [];
+  const cursor = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+  while (cursor < to) {
+    const key = cursor.toISOString().slice(0, 7);
+    months.push({ key, date: new Date(cursor), ...(totals.get(key) ?? { income: {}, expense: {} }) });
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return months;
+}
+
+// Годы, за которые в кошельке вообще есть операции: от самой ранней до
+// текущего. Показывать в ленте годы, где заведомо пусто, незачем.
+export async function getWalletYears(walletId: string) {
+  const earliest = await prisma.transaction.findFirst({
+    where: { walletId },
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true },
+  });
+
+  const currentYear = new Date().getUTCFullYear();
+  const firstYear = earliest ? earliest.createdAt.getUTCFullYear() : currentYear;
+
+  const years: number[] = [];
+  for (let year = firstYear; year <= currentYear; year += 1) {
+    years.push(year);
+  }
+  return years;
+}

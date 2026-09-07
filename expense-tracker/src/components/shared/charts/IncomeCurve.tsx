@@ -194,12 +194,15 @@ export const IncomeCurve: React.FC<Props> = ({
             })}
           </div>
 
+          {/* Двенадцать месяцев года в ширину телефона не влезают шрифтом
+              подписи недель, поэтому у длинного ряда он мельче. */}
           <div className="mt-2 flex">
             {points.map((point) => (
               <p
                 key={point.key}
                 className={cn(
-                  'flex-1 text-center text-xs',
+                  'min-w-0 flex-1 truncate px-0.5 text-center',
+                  points.length > 8 ? 'text-[10px]' : 'text-xs',
                   hovered === point.key ? 'font-semibold text-gray-700' : 'text-gray-400'
                 )}>
                 {point.label}

@@ -3,6 +3,7 @@ import type { FlowPoint } from '@/components/shared/charts/FlowBars';
 import { FlowBars } from '@/components/shared/charts/FlowBars';
 import { IncomeCurve } from '@/components/shared/charts/IncomeCurve';
 import { CategoryDonut, type CategorySlice } from '@/components/shared/expenses/CategoryDonut';
+import { PeriodSelect, type PeriodMode } from '@/components/shared/expenses/PeriodSelect';
 import { TabStrip, type Tab } from '@/components/shared/expenses/TabStrip';
 import { convertTotals, type Rates } from '@/lib/currency';
 import { CURRENCY_META } from '@/lib/currency';
@@ -10,6 +11,8 @@ import { resolveActiveWallet } from '@/server/activeWallet';
 import {
   getCategoriesForUser,
   getExpenseByCategory,
+  getMonthlyTotalsInRange,
+  getWalletYears,
   getWeeklyTotals,
 } from '@/server/dashboard.service';
 import { getDisplayCurrency } from '@/server/displayCurrency';
@@ -36,6 +39,9 @@ const monthFullFormatter = new Intl.DateTimeFormat('ru-RU', {
 const monthFull = (date: Date) => monthFullFormatter.format(date).replace(' г.', '');
 
 const monthKey = (date: Date) => date.toISOString().slice(0, 7);
+// Двенадцать подписей под годовым графиком должны влезать в ширину телефона,
+// а Intl даёт разную длину («май» и «сент.»), и часть уезжала в многоточие.
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 // «14 августа» — из него берётся только название месяца в нужном падеже.
 const dayMonthFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
@@ -49,10 +55,11 @@ const dayMonth = {
 export default async function ExpensesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string; u?: string }>;
+  searchParams: Promise<{ m?: string; u?: string; p?: string; y?: string }>;
 }) {
   const user = await getCurrentUser();
-  const { m, u } = await searchParams;
+  const { m, u, p, y } = await searchParams;
+  const mode: PeriodMode = p === 'year' ? 'year' : 'month';
 
   const [wallets, categories, currency, ratesResult] = await Promise.all([
     getUserWallets(user.id),
@@ -86,10 +93,23 @@ export default async function ExpensesPage({
 
   // Месяц из адреса, но только из ленты: произвольная строка в ?m= не должна
   // уводить страницу в непонятное состояние.
-  const activeKey = months.some((month) => month.key === m) ? m! : monthKey(current);
-  const [year, month] = activeKey.split('-').map(Number);
-  const from = new Date(Date.UTC(year, month - 1, 1));
-  const to = new Date(Date.UTC(year, month, 1));
+  const activeMonthKey = months.some((month) => month.key === m) ? m! : monthKey(current);
+
+  const years = activeWallet ? await getWalletYears(activeWallet.id) : [current.getUTCFullYear()];
+  const activeYear = years.includes(Number(y)) ? Number(y) : years[years.length - 1];
+
+  // Диапазон, за который считается вся страница. Дальше по коду важен только
+  // он — блоки не знают, месяц это или год.
+  const { from, to } = (() => {
+    if (mode === 'year') {
+      return {
+        from: new Date(Date.UTC(activeYear, 0, 1)),
+        to: new Date(Date.UTC(activeYear + 1, 0, 1)),
+      };
+    }
+    const [year, month] = activeMonthKey.split('-').map(Number);
+    return { from: new Date(Date.UTC(year, month - 1, 1)), to: new Date(Date.UTC(year, month, 1)) };
+  })();
 
   // Участники нужны только у общего кошелька: в личном «все» и «я» — одно
   // и то же, и лента из одной кнопки только занимала бы место.
@@ -105,10 +125,15 @@ export default async function ExpensesPage({
   // показывать чужие траты и вообще что-либо менять.
   const authorId = people.some((person) => person.id === u) ? u : undefined;
 
-  const [rows, weeks] = activeWallet
+  // За год денежный поток по неделям не строим: пятьдесят с лишним столбцов
+  // не читаются, да и блок в этом режиме не показывается. Доход за год идёт
+  // по месяцам — это его естественный шаг.
+  const [rows, buckets] = activeWallet
     ? await Promise.all([
         getExpenseByCategory(activeWallet.id, from, to, authorId),
-        getWeeklyTotals(activeWallet.id, from, to, authorId),
+        mode === 'year'
+          ? getMonthlyTotalsInRange(activeWallet.id, from, to, authorId)
+          : getWeeklyTotals(activeWallet.id, from, to, authorId),
       ])
     : [[], []];
 
@@ -151,31 +176,40 @@ export default async function ExpensesPage({
     muted: row.muted,
   }));
 
-  // Недели подписываем числами месяца: «1–7», «8–14». Дата начала недели
-  // как таковая читателю не нужна, ему нужен кусок месяца.
-  const weekPoints: FlowPoint[] = weeks.map((week) => {
-    const days = `${week.start.getUTCDate()}–${week.end.getUTCDate()}`;
+  // Недели подписываем числами месяца: «1–7», «8–14» — дата начала недели
+  // как таковая читателю не нужна, ему нужен кусок месяца. Месяцы года —
+  // коротким названием.
+  const points: FlowPoint[] = buckets.map((bucket) => {
+    const isWeek = 'start' in bucket;
+    const label = isWeek
+      ? `${bucket.start.getUTCDate()}–${bucket.end.getUTCDate()}`
+      : MONTHS_SHORT[bucket.date.getUTCMonth()];
     return {
-      key: week.key,
-      label: days,
-      fullLabel: `${days} ${dayMonth.format(week.end)}`,
-      income: convertTotals(week.income, currency, rates) ?? 0,
-      expense: convertTotals(week.expense, currency, rates) ?? 0,
+      key: bucket.key,
+      label,
+      fullLabel: isWeek ? `${label} ${dayMonth.format(bucket.end)}` : monthFull(bucket.date),
+      income: convertTotals(bucket.income, currency, rates) ?? 0,
+      expense: convertTotals(bucket.expense, currency, rates) ?? 0,
     };
   });
 
-  // Считаем по тем же неделям, что и столбцы: свод под заголовком обязан
+  // Считаем по тем же отрезкам, что и график: свод под заголовком обязан
   // сходиться с тем, что нарисовано под ним.
-  const incomeTotal = weekPoints.reduce((sum, week) => sum + week.income, 0);
-  const expenseTotal = weekPoints.reduce((sum, week) => sum + week.expense, 0);
+  const incomeTotal = points.reduce((sum, point) => sum + point.income, 0);
+  const expenseTotal = points.reduce((sum, point) => sum + point.expense, 0);
 
-  const activeMonth = months.find((monthTab) => monthTab.key === activeKey);
+  const periodTitle =
+    mode === 'year'
+      ? String(activeYear)
+      : (months.find((monthTab) => monthTab.key === activeMonthKey)?.title ?? '');
   const symbol = CURRENCY_META[currency].symbol;
 
-  // Оба выбора живут в адресе, поэтому каждая ссылка несёт и месяц, и
-  // участника: иначе переключение месяца сбрасывало бы фильтр по человеку.
-  const href = (params: { m?: string; u?: string }) => {
-    const query = new URLSearchParams({ m: activeKey });
+  // Все выборы живут в адресе, поэтому каждая ссылка несёт их целиком:
+  // иначе переключение месяца сбрасывало бы участника, а смена режима —
+  // и то и другое.
+  const href = (params: { m?: string; u?: string; p?: string; y?: string }) => {
+    const query = new URLSearchParams({ m: activeMonthKey, y: String(activeYear) });
+    if (mode === 'year') query.set('p', 'year');
     if (authorId) query.set('u', authorId);
     for (const [name, value] of Object.entries(params)) {
       if (value) query.set(name, value);
@@ -184,10 +218,15 @@ export default async function ExpensesPage({
     return `/expenses?${query}`;
   };
 
-  const monthTabs: Tab[] = months.map((month) => ({
-    ...month,
-    href: href({ m: month.key }),
-  }));
+  const periodTabs: Tab[] =
+    mode === 'year'
+      ? years.map((year) => ({
+          key: String(year),
+          label: year === current.getUTCFullYear() ? 'Этот год' : String(year),
+          title: `${year} год`,
+          href: href({ y: String(year) }),
+        }))
+      : months.map((month) => ({ ...month, href: href({ m: month.key }) }));
 
   const displayName = (person: { name: string | null; email: string }) =>
     person.name?.trim() || person.email;
@@ -222,8 +261,17 @@ export default async function ExpensesPage({
       />
 
       <div className="mx-auto mt-6 flex w-full max-w-[720px] flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <TabStrip tabs={monthTabs} activeKey={activeKey} ariaLabel="Месяц" />
+        <div className="flex flex-col gap-2">
+          <PeriodSelect
+            mode={mode}
+            hrefs={{ month: href({ p: '' }), year: href({ p: 'year' }) }}
+          />
+
+          <TabStrip
+            tabs={periodTabs}
+            activeKey={mode === 'year' ? String(activeYear) : activeMonthKey}
+            ariaLabel={mode === 'year' ? 'Год' : 'Месяц'}
+          />
 
           {/* Второй ряд только у общего кошелька: в личном «общие» и «мои» —
               одно и то же. Оформлен мельче, чтобы не спорить с месяцами. */}
@@ -240,7 +288,7 @@ export default async function ExpensesPage({
         <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h2 className="text-lg font-semibold text-gray-800">Расходы</h2>
-            <p className="text-sm text-gray-400">{activeMonth?.title}</p>
+            <p className="text-sm text-gray-400">{periodTitle}</p>
           </div>
 
           <p className="mt-2 text-3xl font-bold tabular-nums sm:text-4xl">
@@ -253,7 +301,8 @@ export default async function ExpensesPage({
 
           {slices.length === 0 ? (
             <p className="mt-6 text-gray-400">
-              В этом месяце расходов не было. Выберите другой месяц в ленте сверху.
+              {mode === 'year' ? 'В этом году' : 'В этом месяце'} расходов не было. Выберите
+              другой период в ленте сверху.
             </p>
           ) : (
             <div className="mt-6">
@@ -268,28 +317,32 @@ export default async function ExpensesPage({
           ) : null}
         </section>
 
-        <FlowBars
-          className="shadow-sm"
-          points={weekPoints}
-          currency={currency}
-          title="Денежный поток"
-          hint="Выберите неделю"
-          emptyText="В этом месяце операций не было — здесь появятся столбцы по неделям."
-          summary={{
-            label: `Остаток за ${activeMonth?.title ?? 'месяц'}`,
-            income: incomeTotal,
-            expense: expenseTotal,
-          }}
-        />
+        {/* Денежный поток — только помесячный разрез: за год это полсотни
+            столбцов, которые ничего не рассказывают. */}
+        {mode === 'month' ? (
+          <FlowBars
+            className="shadow-sm"
+            points={points}
+            currency={currency}
+            title="Денежный поток"
+            hint="Выберите неделю"
+            emptyText="В этом месяце операций не было — здесь появятся столбцы по неделям."
+            summary={{
+              label: `Остаток за ${periodTitle}`,
+              income: incomeTotal,
+              expense: expenseTotal,
+            }}
+          />
+        ) : null}
 
         <IncomeCurve
-          points={weekPoints}
+          points={points}
           currency={currency}
           title="Доход"
           total={incomeTotal}
-          period={activeMonth?.title}
-          hint="Выберите неделю"
-          emptyText="В этом месяце доходов не было."
+          period={periodTitle}
+          hint={mode === 'year' ? 'Выберите месяц' : 'Выберите неделю'}
+          emptyText={`В этом ${mode === 'year' ? 'году' : 'месяце'} доходов не было.`}
           className="shadow-sm"
         />
       </div>
