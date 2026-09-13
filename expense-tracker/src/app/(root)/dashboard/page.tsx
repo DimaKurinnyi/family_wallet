@@ -151,7 +151,6 @@ export default async function Dashboard() {
         userName={user.name ?? user.email}
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
-        currency={currency}
       />
       <div className="flex flex-col md:flex-row md:justify-around items-center md:items-start">
         <DashboardContent

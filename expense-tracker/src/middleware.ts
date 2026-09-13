@@ -44,6 +44,8 @@ export const config = {
     '/api/:path*',
     '/dashboard/:path*',
     '/expenses/:path*',
+    '/more/:path*',
+    '/profile/:path*',
     '/wallets/:path*',
     '/login',
     '/register',

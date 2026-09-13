@@ -257,7 +257,6 @@ export default async function ExpensesPage({
         userName={user.name ?? user.email}
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
-        currency={currency}
       />
 
       <div className="mx-auto mt-6 flex w-full max-w-[720px] flex-col gap-6">

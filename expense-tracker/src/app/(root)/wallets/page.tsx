@@ -54,7 +54,6 @@ export default async function WalletsPage() {
         userName={user.name ?? user.email}
         wallets={wallets.map((wallet) => ({ id: wallet.id, name: wallet.name, type: wallet.type }))}
         activeWalletId={activeWallet?.id ?? ''}
-        currency={currency}
       />
 
       <div className="mt-8 flex flex-col gap-4 max-w-[640px] mx-auto">

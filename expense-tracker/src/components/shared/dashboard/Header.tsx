@@ -1,9 +1,6 @@
-import type { Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
-import CurrencySwitcher from './CurrencySwitcher';
-import { LogOutButton } from './LogUotButton';
 import { WalletSwitcher, type WalletOption } from './WalletSwitcher';
 
 interface Props {
@@ -11,10 +8,9 @@ interface Props {
   userName?: string | null;
   wallets: WalletOption[];
   activeWalletId: string;
-  currency: Currency;
 }
 
-export const Header: React.FC<Props> = ({ className, userName, wallets, activeWalletId, currency }) => {
+export const Header: React.FC<Props> = ({ className, userName, wallets, activeWalletId }) => {
   return (
     <div className={cn('flex flex-col gap-4 md:flex-row md:items-center md:justify-between', className)}>
       <Link href="/">
@@ -31,11 +27,11 @@ export const Header: React.FC<Props> = ({ className, userName, wallets, activeWa
         <p className="text-xs sm:text-sm text-gray-500">Ведите расходы вместе с семьёй</p>
       </Link>
 
+      {/* Валюта и выход переехали в «Больше»: в шапке остаётся только то,
+          что меняют часто, — кошелёк. */}
       <div className="flex flex-wrap items-center gap-3 md:gap-4">
         <WalletSwitcher wallets={wallets} activeWalletId={activeWalletId} />
-        <CurrencySwitcher currency={currency} />
         <p className="text-sm hidden sm:block">С возвращением, {userName ?? 'друг'}</p>
-        <LogOutButton />
       </div>
     </div>
   );

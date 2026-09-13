@@ -14,17 +14,34 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  name          String?
-  currency      String         @default("USD")
-  wallets       Wallet[]       @relation("UserWallets")
-  createdAt     DateTime       @default(now())
-  walletMembers WalletMember[]
-  sentInvites   WalletInvite[] @relation("SentInvites")
-  accounts      Account[]
-  categories    Category[]
-  transactions  Transaction[]
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String?
+  currency        String         @default("USD")
+  // Когда аватар меняли в последний раз. Само изображение лежит отдельной
+  // строкой: пользователь читается на каждой странице, и таскать с ним
+  // десятки килобайт картинки в каждый запрос незачем. А метка нужна здесь —
+  // из неё строится адрес картинки, чтобы браузер не показывал старую.
+  avatarUpdatedAt DateTime?
+  avatar          Avatar?
+  wallets         Wallet[]       @relation("UserWallets")
+  createdAt       DateTime       @default(now())
+  walletMembers   WalletMember[]
+  sentInvites     WalletInvite[] @relation("SentInvites")
+  accounts        Account[]
+  categories      Category[]
+  transactions    Transaction[]
+}
+
+// Аватар отдельно от пользователя: строка тяжёлая, а читается редко —
+// только когда картинку реально отдают браузеру.
+model Avatar {
+  userId String @id
+  data   Bytes
+  mime   String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("Avatar")
 }
 
 model Wallet {
