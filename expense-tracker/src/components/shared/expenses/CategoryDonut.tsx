@@ -2,6 +2,7 @@
 
 import { CURRENCY_META, type Currency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 export type CategorySlice = {
@@ -11,6 +12,8 @@ export type CategorySlice = {
   share: number;
   /** Свёрнутый хвост: серым, чтобы не спорил с настоящими категориями */
   muted?: boolean;
+  /** Категории внутри свёрнутого хвоста — строка раскрывается по нажатию */
+  children?: { id: string; name: string; amount: number; share: number }[];
 };
 
 interface Props {
@@ -52,6 +55,7 @@ const percent = (share: number) =>
 
 export const CategoryDonut: React.FC<Props> = ({ slices, total, currency }) => {
   const [active, setActive] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const symbol = CURRENCY_META[currency].symbol;
 
   const shown = slices.find((slice) => slice.id === active) ?? null;
@@ -113,34 +117,79 @@ export const CategoryDonut: React.FC<Props> = ({ slices, total, currency }) => {
       </div>
 
       <ul className="flex w-full flex-col gap-1">
-        {slices.map((slice, index) => (
-          <li key={slice.id}>
-            <button
-              type="button"
-              onMouseEnter={() => setActive(slice.id)}
-              onMouseLeave={() => setActive(null)}
-              onFocus={() => setActive(slice.id)}
-              onBlur={() => setActive(null)}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors',
-                active === slice.id ? 'bg-gray-100' : 'hover:bg-gray-50'
-              )}>
-              <span
-                aria-hidden="true"
-                className="h-3 w-3 shrink-0 rounded-full"
-                style={{ background: colorOf(slice, index) }}
-              />
-              <span className="min-w-0 flex-1 truncate text-sm">{slice.name}</span>
-              <span className="shrink-0 text-sm tabular-nums text-gray-400">
-                {percent(slice.share)}%
-              </span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums">
-                {symbol}
-                {money(slice.amount)}
-              </span>
-            </button>
-          </li>
-        ))}
+        {slices.map((slice, index) => {
+          const children = slice.children ?? [];
+          const isOpen = expanded === slice.id;
+
+          return (
+            <li key={slice.id}>
+              <button
+                type="button"
+                onMouseEnter={() => setActive(slice.id)}
+                onMouseLeave={() => setActive(null)}
+                onFocus={() => setActive(slice.id)}
+                onBlur={() => setActive(null)}
+                onClick={
+                  children.length
+                    ? () => setExpanded((current) => (current === slice.id ? null : slice.id))
+                    : undefined
+                }
+                aria-expanded={children.length ? isOpen : undefined}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors',
+                  active === slice.id ? 'bg-gray-100' : 'hover:bg-gray-50',
+                  children.length ? 'cursor-pointer' : 'cursor-default'
+                )}>
+                <span
+                  aria-hidden="true"
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{ background: colorOf(slice, index) }}
+                />
+                <span className="flex min-w-0 flex-1 items-center gap-1">
+                  <span className="min-w-0 truncate text-sm">{slice.name}</span>
+                  {children.length ? (
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cn(
+                        'h-4 w-4 shrink-0 text-gray-400 transition-transform',
+                        isOpen && 'rotate-180'
+                      )}
+                    />
+                  ) : null}
+                </span>
+                <span className="shrink-0 text-sm tabular-nums text-gray-400">
+                  {percent(slice.share)}%
+                </span>
+                <span className="shrink-0 text-sm font-semibold tabular-nums">
+                  {symbol}
+                  {money(slice.amount)}
+                </span>
+              </button>
+
+              {/* Вложенные строки без своего кружка: цвет у них общий,
+                  родительский, и шесть одинаковых серых точек только
+                  сбивали бы с толку. Отступ показывает вложенность. */}
+              {children.length && isOpen ? (
+                <ul className="mt-1 mb-1 flex flex-col gap-0.5 border-l border-gray-200 pl-3 ml-3.5">
+                  {children.map((child) => (
+                    <li
+                      key={child.id}
+                      className="flex items-center gap-3 rounded-lg px-2 py-1 text-gray-500">
+                      <span className="min-w-0 flex-1 truncate text-sm">{child.name}</span>
+                      <span className="shrink-0 text-xs tabular-nums text-gray-400">
+                        {percent(child.share)}%
+                      </span>
+                      <span className="shrink-0 text-sm tabular-nums">
+                        {symbol}
+                        {money(child.amount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

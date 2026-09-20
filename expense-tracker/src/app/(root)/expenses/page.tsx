@@ -153,7 +153,12 @@ export default async function ExpensesPage({
   // «Остальные (1)» — это та же категория, но без имени.
   // Имя нарочно не «Другое»: так называется настоящая системная категория,
   // и две одинаковые строки в легенде сбивали с толку.
-  const grouped: (typeof usable[number] & { muted?: boolean })[] =
+  const share = (amount: number) => (total > 0 ? (amount / total) * 100 : 0);
+
+  const grouped: (typeof usable[number] & {
+    muted?: boolean;
+    children?: { id: string; name: string; amount: number; share: number }[];
+  })[] =
     tail.length > 1
       ? [
           ...head,
@@ -164,6 +169,14 @@ export default async function ExpensesPage({
             byCurrency: {},
             amount: tail.reduce((sum, row) => sum + row.amount, 0),
             muted: true,
+            // Что именно свернули — чтобы строку можно было развернуть и
+            // посмотреть, а не гадать, из чего складывается остаток.
+            children: tail.map((row) => ({
+              id: row.id,
+              name: row.name,
+              amount: row.amount,
+              share: share(row.amount),
+            })),
           },
         ]
       : usable;
@@ -172,8 +185,9 @@ export default async function ExpensesPage({
     id: row.id,
     name: row.name,
     amount: row.amount,
-    share: total > 0 ? (row.amount / total) * 100 : 0,
+    share: share(row.amount),
     muted: row.muted,
+    children: row.children,
   }));
 
   // Недели подписываем числами месяца: «1–7», «8–14» — дата начала недели
